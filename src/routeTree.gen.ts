@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedDoubtRouteImport } from './routes/_authenticated/doubt'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedPracticeSectionRouteImport } from './routes/_authenticated/practice.$section'
 
@@ -35,6 +36,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDoubtRoute = AuthenticatedDoubtRouteImport.update({
+  id: '/doubt',
+  path: '/doubt',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/doubt': typeof AuthenticatedDoubtRoute
   '/api/chat': typeof ApiChatRoute
   '/practice/$section': typeof AuthenticatedPracticeSectionRoute
 }
@@ -58,6 +65,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/doubt': typeof AuthenticatedDoubtRoute
   '/api/chat': typeof ApiChatRoute
   '/practice/$section': typeof AuthenticatedPracticeSectionRoute
 }
@@ -67,20 +75,24 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/doubt': typeof AuthenticatedDoubtRoute
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/practice/$section': typeof AuthenticatedPracticeSectionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard' | '/api/chat' | '/practice/$section'
+  fullPaths:
+    '/' | '/auth' | '/dashboard' | '/doubt' | '/api/chat' | '/practice/$section'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/api/chat' | '/practice/$section'
+  to:
+    '/' | '/auth' | '/dashboard' | '/doubt' | '/api/chat' | '/practice/$section'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/dashboard'
+    | '/_authenticated/doubt'
     | '/api/chat'
     | '/_authenticated/practice/$section'
   fileRoutesById: FileRoutesById
@@ -122,6 +134,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/doubt': {
+      id: '/_authenticated/doubt'
+      path: '/doubt'
+      fullPath: '/doubt'
+      preLoaderRoute: typeof AuthenticatedDoubtRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/chat': {
       id: '/api/chat'
       path: '/api/chat'
@@ -141,11 +160,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDoubtRoute: typeof AuthenticatedDoubtRoute
   AuthenticatedPracticeSectionRoute: typeof AuthenticatedPracticeSectionRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDoubtRoute: AuthenticatedDoubtRoute,
   AuthenticatedPracticeSectionRoute: AuthenticatedPracticeSectionRoute,
 }
 
