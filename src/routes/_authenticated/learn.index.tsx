@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Mascot } from "@/components/Mascot";
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
 import { QA_CHAPTERS, VARC_CHAPTERS, TOTAL_TOPICS, type Chapter } from "@/lib/syllabus";
 import { getTopicProgress } from "@/lib/learn.functions";
 import { cn } from "@/lib/utils";

@@ -18,6 +18,7 @@ import { Route as AuthenticatedVocabularyRouteImport } from './routes/_authentic
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedDoubtIndexRouteImport } from './routes/_authenticated/doubt.index'
 import { Route as AuthenticatedDoubtThreadIdRouteImport } from './routes/_authenticated/doubt.$threadId'
+import { Route as AuthenticatedLearnIndexRouteImport } from './routes/_authenticated/learn.index'
 import { Route as AuthenticatedPracticeSectionRouteImport } from './routes/_authenticated/practice.$section'
 
 const IndexRoute = IndexRouteImport.update({
@@ -65,6 +66,11 @@ const AuthenticatedDoubtThreadIdRoute =
     path: '/$threadId',
     getParentRoute: () => AuthenticatedDoubtRoute,
   } as any)
+const AuthenticatedLearnIndexRoute = AuthenticatedLearnIndexRouteImport.update({
+  id: '/learn/',
+  path: '/learn/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPracticeSectionRoute =
   AuthenticatedPracticeSectionRouteImport.update({
     id: '/practice/$section',
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/doubt/$threadId': typeof AuthenticatedDoubtThreadIdRoute
   '/practice/$section': typeof AuthenticatedPracticeSectionRoute
   '/doubt/': typeof AuthenticatedDoubtIndexRoute
+  '/learn/': typeof AuthenticatedLearnIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/doubt/$threadId': typeof AuthenticatedDoubtThreadIdRoute
   '/practice/$section': typeof AuthenticatedPracticeSectionRoute
   '/doubt': typeof AuthenticatedDoubtIndexRoute
+  '/learn': typeof AuthenticatedLearnIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/_authenticated/doubt/$threadId': typeof AuthenticatedDoubtThreadIdRoute
   '/_authenticated/practice/$section': typeof AuthenticatedPracticeSectionRoute
   '/_authenticated/doubt/': typeof AuthenticatedDoubtIndexRoute
+  '/_authenticated/learn/': typeof AuthenticatedLearnIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/doubt/$threadId'
     | '/practice/$section'
     | '/doubt/'
+    | '/learn/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/doubt/$threadId'
     | '/practice/$section'
     | '/doubt'
+    | '/learn'
   id:
     | '__root__'
     | '/'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/_authenticated/doubt/$threadId'
     | '/_authenticated/practice/$section'
     | '/_authenticated/doubt/'
+    | '/_authenticated/learn/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -214,6 +226,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDoubtThreadIdRouteImport
       parentRoute: typeof AuthenticatedDoubtRoute
     }
+    '/_authenticated/learn/': {
+      id: '/_authenticated/learn/'
+      path: '/learn'
+      fullPath: '/learn/'
+      preLoaderRoute: typeof AuthenticatedLearnIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/practice/$section': {
       id: '/_authenticated/practice/$section'
       path: '/practice/$section'
@@ -242,6 +261,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDoubtRoute: typeof AuthenticatedDoubtRouteWithChildren
   AuthenticatedVocabularyRoute: typeof AuthenticatedVocabularyRoute
   AuthenticatedPracticeSectionRoute: typeof AuthenticatedPracticeSectionRoute
+  AuthenticatedLearnIndexRoute: typeof AuthenticatedLearnIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -249,6 +269,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDoubtRoute: AuthenticatedDoubtRouteWithChildren,
   AuthenticatedVocabularyRoute: AuthenticatedVocabularyRoute,
   AuthenticatedPracticeSectionRoute: AuthenticatedPracticeSectionRoute,
+  AuthenticatedLearnIndexRoute: AuthenticatedLearnIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -263,13 +284,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
