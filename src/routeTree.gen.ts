@@ -18,6 +18,8 @@ import { Route as AuthenticatedVocabularyRouteImport } from './routes/_authentic
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedDoubtIndexRouteImport } from './routes/_authenticated/doubt.index'
 import { Route as AuthenticatedDoubtThreadIdRouteImport } from './routes/_authenticated/doubt.$threadId'
+import { Route as AuthenticatedLearnIndexRouteImport } from './routes/_authenticated/learn.index'
+import { Route as AuthenticatedLearnSlugRouteImport } from './routes/_authenticated/learn.$slug'
 import { Route as AuthenticatedPracticeSectionRouteImport } from './routes/_authenticated/practice.$section'
 
 const IndexRoute = IndexRouteImport.update({
@@ -65,6 +67,16 @@ const AuthenticatedDoubtThreadIdRoute =
     path: '/$threadId',
     getParentRoute: () => AuthenticatedDoubtRoute,
   } as any)
+const AuthenticatedLearnIndexRoute = AuthenticatedLearnIndexRouteImport.update({
+  id: '/learn/',
+  path: '/learn/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedLearnSlugRoute = AuthenticatedLearnSlugRouteImport.update({
+  id: '/learn/$slug',
+  path: '/learn/$slug',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPracticeSectionRoute =
   AuthenticatedPracticeSectionRouteImport.update({
     id: '/practice/$section',
@@ -80,8 +92,10 @@ export interface FileRoutesByFullPath {
   '/vocabulary': typeof AuthenticatedVocabularyRoute
   '/api/chat': typeof ApiChatRoute
   '/doubt/$threadId': typeof AuthenticatedDoubtThreadIdRoute
+  '/learn/$slug': typeof AuthenticatedLearnSlugRoute
   '/practice/$section': typeof AuthenticatedPracticeSectionRoute
   '/doubt/': typeof AuthenticatedDoubtIndexRoute
+  '/learn/': typeof AuthenticatedLearnIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -90,8 +104,10 @@ export interface FileRoutesByTo {
   '/vocabulary': typeof AuthenticatedVocabularyRoute
   '/api/chat': typeof ApiChatRoute
   '/doubt/$threadId': typeof AuthenticatedDoubtThreadIdRoute
+  '/learn/$slug': typeof AuthenticatedLearnSlugRoute
   '/practice/$section': typeof AuthenticatedPracticeSectionRoute
   '/doubt': typeof AuthenticatedDoubtIndexRoute
+  '/learn': typeof AuthenticatedLearnIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -103,8 +119,10 @@ export interface FileRoutesById {
   '/_authenticated/vocabulary': typeof AuthenticatedVocabularyRoute
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/doubt/$threadId': typeof AuthenticatedDoubtThreadIdRoute
+  '/_authenticated/learn/$slug': typeof AuthenticatedLearnSlugRoute
   '/_authenticated/practice/$section': typeof AuthenticatedPracticeSectionRoute
   '/_authenticated/doubt/': typeof AuthenticatedDoubtIndexRoute
+  '/_authenticated/learn/': typeof AuthenticatedLearnIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -116,8 +134,10 @@ export interface FileRouteTypes {
     | '/vocabulary'
     | '/api/chat'
     | '/doubt/$threadId'
+    | '/learn/$slug'
     | '/practice/$section'
     | '/doubt/'
+    | '/learn/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -126,8 +146,10 @@ export interface FileRouteTypes {
     | '/vocabulary'
     | '/api/chat'
     | '/doubt/$threadId'
+    | '/learn/$slug'
     | '/practice/$section'
     | '/doubt'
+    | '/learn'
   id:
     | '__root__'
     | '/'
@@ -138,8 +160,10 @@ export interface FileRouteTypes {
     | '/_authenticated/vocabulary'
     | '/api/chat'
     | '/_authenticated/doubt/$threadId'
+    | '/_authenticated/learn/$slug'
     | '/_authenticated/practice/$section'
     | '/_authenticated/doubt/'
+    | '/_authenticated/learn/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -214,6 +238,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDoubtThreadIdRouteImport
       parentRoute: typeof AuthenticatedDoubtRoute
     }
+    '/_authenticated/learn/': {
+      id: '/_authenticated/learn/'
+      path: '/learn'
+      fullPath: '/learn/'
+      preLoaderRoute: typeof AuthenticatedLearnIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/learn/$slug': {
+      id: '/_authenticated/learn/$slug'
+      path: '/learn/$slug'
+      fullPath: '/learn/$slug'
+      preLoaderRoute: typeof AuthenticatedLearnSlugRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/practice/$section': {
       id: '/_authenticated/practice/$section'
       path: '/practice/$section'
@@ -241,14 +279,18 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDoubtRoute: typeof AuthenticatedDoubtRouteWithChildren
   AuthenticatedVocabularyRoute: typeof AuthenticatedVocabularyRoute
+  AuthenticatedLearnSlugRoute: typeof AuthenticatedLearnSlugRoute
   AuthenticatedPracticeSectionRoute: typeof AuthenticatedPracticeSectionRoute
+  AuthenticatedLearnIndexRoute: typeof AuthenticatedLearnIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDoubtRoute: AuthenticatedDoubtRouteWithChildren,
   AuthenticatedVocabularyRoute: AuthenticatedVocabularyRoute,
+  AuthenticatedLearnSlugRoute: AuthenticatedLearnSlugRoute,
   AuthenticatedPracticeSectionRoute: AuthenticatedPracticeSectionRoute,
+  AuthenticatedLearnIndexRoute: AuthenticatedLearnIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

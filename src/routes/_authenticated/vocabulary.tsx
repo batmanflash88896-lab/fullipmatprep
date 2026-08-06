@@ -4,9 +4,9 @@ import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { getVocabDeck, setVocabStatus } from "@/lib/study.functions";
+import { enrichWord, getVocabDeck, setVocabStatus } from "@/lib/study.functions";
 import { cn } from "@/lib/utils";
-import { RotateCcw, Check, Repeat } from "lucide-react";
+import { Check, Repeat, RotateCcw, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/vocabulary")({
   head: () => ({
@@ -29,6 +29,11 @@ function VocabPage() {
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
 
+  const expand = useMutation({
+    mutationFn: (wordId: string) => enrichWord({ data: { wordId } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["vocab"] }),
+  });
+
   const mark = useMutation({
     mutationFn: (input: { wordId: string; status: "learning" | "known" }) =>
       setVocabStatus({ data: input }),
@@ -38,6 +43,11 @@ function VocabPage() {
   const words = deck ?? [];
   const card = words[index % Math.max(words.length, 1)];
   const known = words.filter((w) => w.status === "known").length;
+  const examples = ((card?.examples as string[] | null) ?? []).filter(Boolean);
+  const otherMeanings = ((card?.other_meanings as
+    | { part_of_speech?: string; meaning: string; example?: string }[]
+    | null) ?? []).filter((m) => m?.meaning);
+  const antonyms = (card?.antonyms as string[] | null) ?? [];
 
   function advance(status: "learning" | "known") {
     if (!card) return;
@@ -98,12 +108,60 @@ function VocabPage() {
                     <strong>Synonyms:</strong> {card.synonyms.join(", ")}
                   </p>
                 )}
-                {card.example && (
-                  <p className="text-sm italic text-muted-foreground">“{card.example}”</p>
+                {examples.length > 0 ? (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                      Used in sentences
+                    </p>
+                    {examples.map((ex) => (
+                      <p key={ex} className="text-sm italic text-muted-foreground">
+                        “{ex}”
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  card.example && (
+                    <p className="text-sm italic text-muted-foreground">“{card.example}”</p>
+                  )
+                )}
+                {otherMeanings.length > 0 && (
+                  <div className="space-y-2 rounded-2xl border border-border/70 bg-background p-3">
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                      Same word, other meanings
+                    </p>
+                    {otherMeanings.map((m) => (
+                      <div key={m.meaning}>
+                        <p className="text-sm font-semibold">
+                          {m.part_of_speech ? `(${m.part_of_speech}) ` : ""}
+                          {m.meaning}
+                        </p>
+                        {m.example && (
+                          <p className="text-sm italic text-muted-foreground">“{m.example}”</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {antonyms.length > 0 && (
+                  <p className="text-sm">
+                    <strong>Antonyms:</strong> {antonyms.join(", ")}
+                  </p>
                 )}
               </div>
             )}
           </button>
+
+          {!card.enriched && (
+            <Button
+              variant="outline"
+              className="mt-4"
+              disabled={expand.isPending}
+              onClick={() => expand.mutate(card.id as string)}
+            >
+              <Sparkles className="mr-1.5 h-4 w-4" />
+              {expand.isPending ? "Sunny is writing…" : "Show all meanings & examples"}
+            </Button>
+          )}
 
           <div className="mt-5 flex flex-wrap gap-3">
             <Button variant="outline" onClick={() => advance("learning")}>

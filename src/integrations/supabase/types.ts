@@ -120,6 +120,36 @@ export type Database = {
         }
         Relationships: []
       }
+      lessons: {
+        Row: {
+          chapter: string
+          content: Json
+          created_at: string
+          id: string
+          section: string
+          topic: string
+          topic_slug: string
+        }
+        Insert: {
+          chapter: string
+          content: Json
+          created_at?: string
+          id?: string
+          section: string
+          topic: string
+          topic_slug: string
+        }
+        Update: {
+          chapter?: string
+          content?: Json
+          created_at?: string
+          id?: string
+          section?: string
+          topic?: string
+          topic_slug?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -204,6 +234,36 @@ export type Database = {
         }
         Relationships: []
       }
+      topic_progress: {
+        Row: {
+          id: string
+          practice_correct: number
+          practice_total: number
+          status: string
+          topic_slug: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          practice_correct?: number
+          practice_total?: number
+          status?: string
+          topic_slug: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          practice_correct?: number
+          practice_total?: number
+          status?: string
+          topic_slug?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       vocab_progress: {
         Row: {
           id: string
@@ -238,31 +298,46 @@ export type Database = {
       }
       vocab_words: {
         Row: {
+          antonyms: string[]
           created_at: string
+          enriched: boolean
           example: string
+          examples: Json
           id: string
           level: string
           meaning: string
+          other_meanings: Json
+          part_of_speech: string | null
           root_hint: string | null
           synonyms: string[]
           word: string
         }
         Insert: {
+          antonyms?: string[]
           created_at?: string
+          enriched?: boolean
           example: string
+          examples?: Json
           id?: string
           level?: string
           meaning: string
+          other_meanings?: Json
+          part_of_speech?: string | null
           root_hint?: string | null
           synonyms?: string[]
           word: string
         }
         Update: {
+          antonyms?: string[]
           created_at?: string
+          enriched?: boolean
           example?: string
+          examples?: Json
           id?: string
           level?: string
           meaning?: string
+          other_meanings?: Json
+          part_of_speech?: string | null
           root_hint?: string | null
           synonyms?: string[]
           word?: string

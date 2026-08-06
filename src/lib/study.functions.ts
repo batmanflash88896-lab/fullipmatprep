@@ -174,3 +174,68 @@ export const setVocabStatus = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export type WordDetail = {
+  part_of_speech: string;
+  meaning: string;
+  examples: string[];
+  other_meanings: { part_of_speech: string; meaning: string; example: string }[];
+  synonyms: string[];
+  antonyms: string[];
+  root_hint: string;
+};
+
+export const enrichWord = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { wordId: string }) => input)
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: row, error } = await supabase
+      .from("vocab_words")
+      .select("*")
+      .eq("id", data.wordId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!row) throw new Error("Word not found");
+    if (row.enriched) return row;
+
+    const key = process.env["LOVABLE_API_KEY"];
+    if (!key) throw new Error("Missing LOVABLE_API_KEY");
+    const { createLovableAiGatewayProvider } = await import("@/lib/ai-gateway.server");
+    const { streamText } = await import("ai");
+
+    const gateway = createLovableAiGatewayProvider(key);
+    const result = streamText({
+      model: gateway("google/gemini-3.6-flash"),
+      temperature: 0.3,
+      system:
+        "You are an IPMAT English coach. Reply with ONLY a JSON object, no prose, no code fences.",
+      prompt: `Explain the English word "${row.word}" for an IPMAT aspirant.
+Return JSON: {"part_of_speech":"...","meaning":"simple one-line meaning","examples":["3 natural sentences using the word"],"other_meanings":[{"part_of_speech":"...","meaning":"...","example":"sentence showing THIS meaning"}],"synonyms":["4 words"],"antonyms":["3 words"],"root_hint":"root/prefix origin plus a memory hook"}
+Include every distinct meaning the word carries (different senses or parts of speech) in other_meanings. If it has only one meaning, return an empty array there.`,
+    });
+
+    const text = await result.text;
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start === -1 || end === -1) throw new Error("Could not build this word card. Try again.");
+    const detail = JSON.parse(text.slice(start, end + 1)) as WordDetail;
+
+    const { data: updated, error: upErr } = await supabase
+      .from("vocab_words")
+      .update({
+        part_of_speech: detail.part_of_speech ?? null,
+        meaning: detail.meaning || row.meaning,
+        examples: (detail.examples ?? []) as unknown as never,
+        other_meanings: (detail.other_meanings ?? []) as unknown as never,
+        synonyms: detail.synonyms?.length ? detail.synonyms : row.synonyms,
+        antonyms: detail.antonyms ?? [],
+        root_hint: detail.root_hint || row.root_hint,
+        enriched: true,
+      })
+      .eq("id", data.wordId)
+      .select("*")
+      .maybeSingle();
+    if (upErr) throw new Error(upErr.message);
+    return updated ?? row;
+  });
