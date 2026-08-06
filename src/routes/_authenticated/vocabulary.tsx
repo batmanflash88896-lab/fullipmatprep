@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { enrichWord, getVocabDeck, setVocabStatus } from "@/lib/study.functions";
 import { cn } from "@/lib/utils";
-import { Check, Repeat, Sparkles } from "lucide-react";
+import { Check, Repeat, RotateCcw, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/vocabulary")({
   head: () => ({
