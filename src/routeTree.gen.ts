@@ -10,33 +10,143 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedDoubtRouteImport } from './routes/_authenticated/doubt'
+import { Route as AuthenticatedVocabularyRouteImport } from './routes/_authenticated/vocabulary'
+import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as AuthenticatedDoubtIndexRouteImport } from './routes/_authenticated/doubt.index'
+import { Route as AuthenticatedDoubtThreadIdRouteImport } from './routes/_authenticated/doubt.$threadId'
+import { Route as AuthenticatedPracticeSectionRouteImport } from './routes/_authenticated/practice.$section'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDoubtRoute = AuthenticatedDoubtRouteImport.update({
+  id: '/doubt',
+  path: '/doubt',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedVocabularyRoute = AuthenticatedVocabularyRouteImport.update({
+  id: '/vocabulary',
+  path: '/vocabulary',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiChatRoute = ApiChatRouteImport.update({
+  id: '/api/chat',
+  path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedDoubtIndexRoute = AuthenticatedDoubtIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedDoubtRoute,
+} as any)
+const AuthenticatedDoubtThreadIdRoute =
+  AuthenticatedDoubtThreadIdRouteImport.update({
+    id: '/$threadId',
+    path: '/$threadId',
+    getParentRoute: () => AuthenticatedDoubtRoute,
+  } as any)
+const AuthenticatedPracticeSectionRoute =
+  AuthenticatedPracticeSectionRouteImport.update({
+    id: '/practice/$section',
+    path: '/practice/$section',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/doubt': typeof AuthenticatedDoubtRouteWithChildren
+  '/vocabulary': typeof AuthenticatedVocabularyRoute
+  '/api/chat': typeof ApiChatRoute
+  '/doubt/$threadId': typeof AuthenticatedDoubtThreadIdRoute
+  '/practice/$section': typeof AuthenticatedPracticeSectionRoute
+  '/doubt/': typeof AuthenticatedDoubtIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/vocabulary': typeof AuthenticatedVocabularyRoute
+  '/api/chat': typeof ApiChatRoute
+  '/doubt/$threadId': typeof AuthenticatedDoubtThreadIdRoute
+  '/practice/$section': typeof AuthenticatedPracticeSectionRoute
+  '/doubt': typeof AuthenticatedDoubtIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/doubt': typeof AuthenticatedDoubtRouteWithChildren
+  '/_authenticated/vocabulary': typeof AuthenticatedVocabularyRoute
+  '/api/chat': typeof ApiChatRoute
+  '/_authenticated/doubt/$threadId': typeof AuthenticatedDoubtThreadIdRoute
+  '/_authenticated/practice/$section': typeof AuthenticatedPracticeSectionRoute
+  '/_authenticated/doubt/': typeof AuthenticatedDoubtIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/doubt'
+    | '/vocabulary'
+    | '/api/chat'
+    | '/doubt/$threadId'
+    | '/practice/$section'
+    | '/doubt/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/vocabulary'
+    | '/api/chat'
+    | '/doubt/$threadId'
+    | '/practice/$section'
+    | '/doubt'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/doubt'
+    | '/_authenticated/vocabulary'
+    | '/api/chat'
+    | '/_authenticated/doubt/$threadId'
+    | '/_authenticated/practice/$section'
+    | '/_authenticated/doubt/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  ApiChatRoute: typeof ApiChatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +158,108 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/doubt': {
+      id: '/_authenticated/doubt'
+      path: '/doubt'
+      fullPath: '/doubt'
+      preLoaderRoute: typeof AuthenticatedDoubtRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/vocabulary': {
+      id: '/_authenticated/vocabulary'
+      path: '/vocabulary'
+      fullPath: '/vocabulary'
+      preLoaderRoute: typeof AuthenticatedVocabularyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/chat': {
+      id: '/api/chat'
+      path: '/api/chat'
+      fullPath: '/api/chat'
+      preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/doubt/': {
+      id: '/_authenticated/doubt/'
+      path: '/'
+      fullPath: '/doubt/'
+      preLoaderRoute: typeof AuthenticatedDoubtIndexRouteImport
+      parentRoute: typeof AuthenticatedDoubtRoute
+    }
+    '/_authenticated/doubt/$threadId': {
+      id: '/_authenticated/doubt/$threadId'
+      path: '/$threadId'
+      fullPath: '/doubt/$threadId'
+      preLoaderRoute: typeof AuthenticatedDoubtThreadIdRouteImport
+      parentRoute: typeof AuthenticatedDoubtRoute
+    }
+    '/_authenticated/practice/$section': {
+      id: '/_authenticated/practice/$section'
+      path: '/practice/$section'
+      fullPath: '/practice/$section'
+      preLoaderRoute: typeof AuthenticatedPracticeSectionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedDoubtRouteChildren {
+  AuthenticatedDoubtThreadIdRoute: typeof AuthenticatedDoubtThreadIdRoute
+  AuthenticatedDoubtIndexRoute: typeof AuthenticatedDoubtIndexRoute
+}
+
+const AuthenticatedDoubtRouteChildren: AuthenticatedDoubtRouteChildren = {
+  AuthenticatedDoubtThreadIdRoute: AuthenticatedDoubtThreadIdRoute,
+  AuthenticatedDoubtIndexRoute: AuthenticatedDoubtIndexRoute,
+}
+
+const AuthenticatedDoubtRouteWithChildren =
+  AuthenticatedDoubtRoute._addFileChildren(AuthenticatedDoubtRouteChildren)
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDoubtRoute: typeof AuthenticatedDoubtRouteWithChildren
+  AuthenticatedVocabularyRoute: typeof AuthenticatedVocabularyRoute
+  AuthenticatedPracticeSectionRoute: typeof AuthenticatedPracticeSectionRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDoubtRoute: AuthenticatedDoubtRouteWithChildren,
+  AuthenticatedVocabularyRoute: AuthenticatedVocabularyRoute,
+  AuthenticatedPracticeSectionRoute: AuthenticatedPracticeSectionRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  ApiChatRoute: ApiChatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
