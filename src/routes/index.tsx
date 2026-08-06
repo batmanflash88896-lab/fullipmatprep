@@ -94,7 +94,7 @@ function Index() {
             <Flame className="h-3.5 w-3.5 text-primary" /> Built by a student, for students
           </span>
           <h1 className="mt-5 font-display text-4xl font-extrabold leading-tight tracking-tight sm:text-6xl">
-            Crack <span className="text-gradient-sunrise">IPMAT</span> with ten focused minutes a
+            Crack <span className="text-sunrise">IPMAT</span> with ten focused minutes a
             day.
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">
