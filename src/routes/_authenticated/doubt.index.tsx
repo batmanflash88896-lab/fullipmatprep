@@ -34,7 +34,7 @@ function DoubtIndex() {
   const { data: threads } = useQuery({ queryKey: ["threads"], queryFn: () => listThreads() });
 
   const create = useMutation({
-    mutationFn: (title?: string) => createThread({ data: { title } }),
+    mutationFn: (title?: string) => createThread({ data: title ? { title } : {} }),
     onSuccess: async ({ id }) => {
       await queryClient.invalidateQueries({ queryKey: ["threads"] });
       navigate({ to: "/doubt/$threadId", params: { threadId: id } });

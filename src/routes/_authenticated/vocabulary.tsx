@@ -88,14 +88,14 @@ function VocabPage() {
               <div className="min-h-44 space-y-3">
                 <p className="font-display text-2xl font-extrabold">{card.word}</p>
                 <p className="text-base">{card.meaning}</p>
-                {card.root && (
+                {card.root_hint && (
                   <p className="text-sm text-muted-foreground">
-                    <strong className="text-foreground">Root:</strong> {card.root}
+                    <strong className="text-foreground">Root:</strong> {card.root_hint}
                   </p>
                 )}
-                {card.memory_hook && (
+                {card.synonyms?.length > 0 && (
                   <p className="rounded-2xl bg-accent/10 p-3 text-sm">
-                    <strong>Memory hook:</strong> {card.memory_hook}
+                    <strong>Synonyms:</strong> {card.synonyms.join(", ")}
                   </p>
                 )}
                 {card.example && (
