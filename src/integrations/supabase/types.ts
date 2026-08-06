@@ -14,7 +14,261 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      attempts: {
+        Row: {
+          created_at: string
+          id: string
+          is_correct: boolean
+          question_id: string
+          seconds_taken: number
+          section: string
+          selected_index: number | null
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_correct: boolean
+          question_id: string
+          seconds_taken?: number
+          section: string
+          selected_index?: number | null
+          topic: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          question_id?: string
+          seconds_taken?: number
+          section?: string
+          selected_index?: number | null
+          topic?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attempts_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          client_message_id: string | null
+          created_at: string
+          id: string
+          parts: Json
+          role: string
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          client_message_id?: string | null
+          created_at?: string
+          id?: string
+          parts: Json
+          role: string
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          client_message_id?: string | null
+          created_at?: string
+          id?: string
+          parts?: Json
+          role?: string
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_threads: {
+        Row: {
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          last_active_on: string | null
+          streak: number
+          target_year: number
+          updated_at: string
+          xp: number
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string
+          id: string
+          last_active_on?: string | null
+          streak?: number
+          target_year?: number
+          updated_at?: string
+          xp?: number
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          last_active_on?: string | null
+          streak?: number
+          target_year?: number
+          updated_at?: string
+          xp?: number
+        }
+        Relationships: []
+      }
+      questions: {
+        Row: {
+          common_mistake: string | null
+          correct_index: number
+          created_at: string
+          difficulty: string
+          id: string
+          is_pyq: boolean
+          options: Json
+          passage: string | null
+          prompt: string
+          pyq_source: string | null
+          section: string
+          solution: string
+          topic: string
+          trick: string | null
+        }
+        Insert: {
+          common_mistake?: string | null
+          correct_index: number
+          created_at?: string
+          difficulty?: string
+          id?: string
+          is_pyq?: boolean
+          options: Json
+          passage?: string | null
+          prompt: string
+          pyq_source?: string | null
+          section: string
+          solution: string
+          topic: string
+          trick?: string | null
+        }
+        Update: {
+          common_mistake?: string | null
+          correct_index?: number
+          created_at?: string
+          difficulty?: string
+          id?: string
+          is_pyq?: boolean
+          options?: Json
+          passage?: string | null
+          prompt?: string
+          pyq_source?: string | null
+          section?: string
+          solution?: string
+          topic?: string
+          trick?: string | null
+        }
+        Relationships: []
+      }
+      vocab_progress: {
+        Row: {
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+          word_id: string
+        }
+        Insert: {
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          word_id: string
+        }
+        Update: {
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          word_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocab_progress_word_id_fkey"
+            columns: ["word_id"]
+            isOneToOne: false
+            referencedRelation: "vocab_words"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vocab_words: {
+        Row: {
+          created_at: string
+          example: string
+          id: string
+          level: string
+          meaning: string
+          root_hint: string | null
+          synonyms: string[]
+          word: string
+        }
+        Insert: {
+          created_at?: string
+          example: string
+          id?: string
+          level?: string
+          meaning: string
+          root_hint?: string | null
+          synonyms?: string[]
+          word: string
+        }
+        Update: {
+          created_at?: string
+          example?: string
+          id?: string
+          level?: string
+          meaning?: string
+          root_hint?: string | null
+          synonyms?: string[]
+          word?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
