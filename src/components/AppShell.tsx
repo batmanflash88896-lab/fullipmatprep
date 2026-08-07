@@ -9,6 +9,7 @@ import type { ReactNode } from "react";
 
 const NAV = [
   { to: "/dashboard", label: "Today" },
+  { to: "/plan", label: "My plan" },
   { to: "/learn", label: "Learn" },
   { to: "/practice/QA", label: "Quant" },
   { to: "/practice/VARC", label: "VARC" },
