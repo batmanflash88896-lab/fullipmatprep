@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDoubtRouteImport } from './routes/_authenticated/doubt'
+import { Route as AuthenticatedPlanRouteImport } from './routes/_authenticated/plan'
 import { Route as AuthenticatedVocabularyRouteImport } from './routes/_authenticated/vocabulary'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedDoubtIndexRouteImport } from './routes/_authenticated/doubt.index'
@@ -44,6 +45,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 const AuthenticatedDoubtRoute = AuthenticatedDoubtRouteImport.update({
   id: '/doubt',
   path: '/doubt',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPlanRoute = AuthenticatedPlanRouteImport.update({
+  id: '/plan',
+  path: '/plan',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedVocabularyRoute = AuthenticatedVocabularyRouteImport.update({
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/doubt': typeof AuthenticatedDoubtRouteWithChildren
+  '/plan': typeof AuthenticatedPlanRoute
   '/vocabulary': typeof AuthenticatedVocabularyRoute
   '/api/chat': typeof ApiChatRoute
   '/doubt/$threadId': typeof AuthenticatedDoubtThreadIdRoute
@@ -101,6 +108,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/plan': typeof AuthenticatedPlanRoute
   '/vocabulary': typeof AuthenticatedVocabularyRoute
   '/api/chat': typeof ApiChatRoute
   '/doubt/$threadId': typeof AuthenticatedDoubtThreadIdRoute
@@ -116,6 +124,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/doubt': typeof AuthenticatedDoubtRouteWithChildren
+  '/_authenticated/plan': typeof AuthenticatedPlanRoute
   '/_authenticated/vocabulary': typeof AuthenticatedVocabularyRoute
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/doubt/$threadId': typeof AuthenticatedDoubtThreadIdRoute
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/doubt'
+    | '/plan'
     | '/vocabulary'
     | '/api/chat'
     | '/doubt/$threadId'
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/plan'
     | '/vocabulary'
     | '/api/chat'
     | '/doubt/$threadId'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/dashboard'
     | '/_authenticated/doubt'
+    | '/_authenticated/plan'
     | '/_authenticated/vocabulary'
     | '/api/chat'
     | '/_authenticated/doubt/$threadId'
@@ -208,6 +220,13 @@ declare module '@tanstack/react-router' {
       path: '/doubt'
       fullPath: '/doubt'
       preLoaderRoute: typeof AuthenticatedDoubtRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/plan': {
+      id: '/_authenticated/plan'
+      path: '/plan'
+      fullPath: '/plan'
+      preLoaderRoute: typeof AuthenticatedPlanRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/vocabulary': {
@@ -278,6 +297,7 @@ const AuthenticatedDoubtRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDoubtRoute: typeof AuthenticatedDoubtRouteWithChildren
+  AuthenticatedPlanRoute: typeof AuthenticatedPlanRoute
   AuthenticatedVocabularyRoute: typeof AuthenticatedVocabularyRoute
   AuthenticatedLearnSlugRoute: typeof AuthenticatedLearnSlugRoute
   AuthenticatedPracticeSectionRoute: typeof AuthenticatedPracticeSectionRoute
@@ -287,6 +307,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDoubtRoute: AuthenticatedDoubtRouteWithChildren,
+  AuthenticatedPlanRoute: AuthenticatedPlanRoute,
   AuthenticatedVocabularyRoute: AuthenticatedVocabularyRoute,
   AuthenticatedLearnSlugRoute: AuthenticatedLearnSlugRoute,
   AuthenticatedPracticeSectionRoute: AuthenticatedPracticeSectionRoute,
