@@ -69,7 +69,7 @@ function Dashboard() {
 
       <section className="mt-5 grid gap-4 sm:grid-cols-2">
         <PlanCard
-          to="/practice/QA"
+          section="QA"
           icon={<Calculator className="h-5 w-5" />}
           accent="bg-sunrise"
           title="Daily Quant set"
@@ -78,7 +78,7 @@ function Dashboard() {
           accuracy={pct(data?.qa.correct ?? 0, data?.qa.total ?? 0)}
         />
         <PlanCard
-          to="/practice/VARC"
+          section="VARC"
           icon={<BookOpenText className="h-5 w-5" />}
           accent="bg-ocean"
           title="Daily VARC set"
@@ -183,7 +183,7 @@ function Dashboard() {
 }
 
 function PlanCard({
-  to,
+  section,
   icon,
   accent,
   title,
@@ -191,7 +191,7 @@ function PlanCard({
   done,
   accuracy,
 }: {
-  to: "/practice/QA" | "/practice/VARC";
+  section: "QA" | "VARC";
   icon: React.ReactNode;
   accent: string;
   title: string;
@@ -201,7 +201,8 @@ function PlanCard({
 }) {
   return (
     <Link
-      to={to}
+      to="/practice/$section"
+      params={{ section }}
       className="group relative overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-lift"
     >
       <span

@@ -12,8 +12,8 @@ const NAV = [
   { to: "/plan", label: "My plan" },
   { to: "/learn", label: "Learn" },
   { to: "/mocks", label: "Mocks" },
-  { to: "/practice/QA", label: "Quant" },
-  { to: "/practice/VARC", label: "VARC" },
+  { to: "/practice/$section", params: { section: "QA" }, label: "Quant" },
+  { to: "/practice/$section", params: { section: "VARC" }, label: "VARC" },
   { to: "/vocabulary", label: "Vocab" },
   { to: "/doubt", label: "Doubt solver" },
 ] as const;
@@ -58,11 +58,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           <nav className="ml-4 hidden items-center gap-1 md:flex">
             {NAV.map((item) => (
               <Link
-                key={item.to}
+                key={item.label}
                 to={item.to}
+                params={(item as { params?: Record<string, string> }).params as never}
                 className={cn(
                   "rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground",
-                  pathname.startsWith(item.to) && "bg-secondary text-foreground",
+                  pathname.startsWith(item.to.replace("$section", (item as { params?: { section: string } }).params?.section ?? "")) && "bg-secondary text-foreground",
                 )}
               >
                 {item.label}
@@ -88,11 +89,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav className="flex items-center gap-1 overflow-x-auto border-t border-border/60 px-3 py-2 md:hidden">
           {NAV.map((item) => (
             <Link
-              key={item.to}
+              key={item.label}
               to={item.to}
+              params={(item as { params?: Record<string, string> }).params as never}
               className={cn(
                 "whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground",
-                pathname.startsWith(item.to) && "bg-secondary text-foreground",
+                pathname.startsWith(item.to.replace("$section", (item as { params?: { section: string } }).params?.section ?? "")) && "bg-secondary text-foreground",
               )}
             >
               {item.label}
