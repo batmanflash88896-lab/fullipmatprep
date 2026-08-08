@@ -150,6 +150,145 @@ export type Database = {
         }
         Relationships: []
       }
+      mock_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          paper_id: string
+          score: number
+          seconds: number
+          total: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          paper_id: string
+          score?: number
+          seconds?: number
+          total?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          paper_id?: string
+          score?: number
+          seconds?: number
+          total?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mock_attempts_paper_id_fkey"
+            columns: ["paper_id"]
+            isOneToOne: false
+            referencedRelation: "mock_papers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mock_papers: {
+        Row: {
+          created_at: string
+          duration_min: number
+          exam: string
+          id: string
+          kind: string
+          question_count: number
+          section: string
+          sort_order: number
+          title: string
+          topic_name: string | null
+          topic_slug: string | null
+          year: number | null
+        }
+        Insert: {
+          created_at?: string
+          duration_min?: number
+          exam: string
+          id?: string
+          kind?: string
+          question_count?: number
+          section?: string
+          sort_order?: number
+          title: string
+          topic_name?: string | null
+          topic_slug?: string | null
+          year?: number | null
+        }
+        Update: {
+          created_at?: string
+          duration_min?: number
+          exam?: string
+          id?: string
+          kind?: string
+          question_count?: number
+          section?: string
+          sort_order?: number
+          title?: string
+          topic_name?: string | null
+          topic_slug?: string | null
+          year?: number | null
+        }
+        Relationships: []
+      }
+      mock_questions: {
+        Row: {
+          common_mistake: string | null
+          correct_index: number
+          created_at: string
+          id: string
+          options: Json
+          paper_id: string
+          passage: string | null
+          position: number
+          prompt: string
+          section: string
+          solution: string
+          topic: string | null
+          trick: string | null
+        }
+        Insert: {
+          common_mistake?: string | null
+          correct_index: number
+          created_at?: string
+          id?: string
+          options: Json
+          paper_id: string
+          passage?: string | null
+          position?: number
+          prompt: string
+          section?: string
+          solution: string
+          topic?: string | null
+          trick?: string | null
+        }
+        Update: {
+          common_mistake?: string | null
+          correct_index?: number
+          created_at?: string
+          id?: string
+          options?: Json
+          paper_id?: string
+          passage?: string | null
+          position?: number
+          prompt?: string
+          section?: string
+          solution?: string
+          topic?: string | null
+          trick?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mock_questions_paper_id_fkey"
+            columns: ["paper_id"]
+            isOneToOne: false
+            referencedRelation: "mock_papers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

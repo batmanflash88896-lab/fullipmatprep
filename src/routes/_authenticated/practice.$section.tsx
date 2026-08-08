@@ -149,7 +149,7 @@ function PracticePage() {
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Button asChild className="bg-sunrise text-primary-foreground shadow-lift">
-              <Link to={section === "QA" ? "/practice/VARC" : "/practice/QA"}>
+              <Link to="/practice/$section" params={{ section: section === "QA" ? "VARC" : "QA" }}>
                 Do the {section === "QA" ? "VARC" : "Quant"} set
               </Link>
             </Button>

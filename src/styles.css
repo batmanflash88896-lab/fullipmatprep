@@ -106,8 +106,17 @@
   --gradient-sunrise: linear-gradient(135deg, oklch(0.686 0.187 33), oklch(0.79 0.155 74));
   --gradient-dusk: linear-gradient(140deg, oklch(0.3 0.1 285), oklch(0.4 0.14 320));
   --gradient-glow: radial-gradient(60% 60% at 50% 0%, oklch(0.79 0.155 74 / 35%), transparent 70%);
+  --gradient-aurora: linear-gradient(135deg, oklch(0.62 0.21 300), oklch(0.66 0.2 12), oklch(0.79 0.16 74));
+  --gradient-candy: linear-gradient(135deg, oklch(0.66 0.22 350), oklch(0.7 0.19 30));
+  --gradient-ocean: linear-gradient(135deg, oklch(0.58 0.16 250), oklch(0.72 0.14 195));
+  --gradient-mint: linear-gradient(135deg, oklch(0.66 0.16 165), oklch(0.78 0.15 130));
+  --gradient-mesh:
+    radial-gradient(46% 38% at 8% 0%, oklch(0.79 0.155 74 / 30%), transparent 62%),
+    radial-gradient(44% 36% at 96% 6%, oklch(0.66 0.21 320 / 26%), transparent 64%),
+    radial-gradient(50% 40% at 50% 100%, oklch(0.7 0.15 210 / 20%), transparent 66%);
   --shadow-soft: 0 1px 2px oklch(0.27 0.09 285 / 6%), 0 8px 24px -12px oklch(0.27 0.09 285 / 18%);
   --shadow-lift: 0 18px 40px -18px oklch(0.686 0.187 33 / 45%);
+  --shadow-pop: 0 22px 48px -20px oklch(0.62 0.21 300 / 45%);
   --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-body: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 }
@@ -150,6 +159,10 @@
   --sidebar-border: oklch(1 0 0 / 12%);
   --sidebar-ring: oklch(0.71 0.185 33);
   --shadow-soft: 0 1px 2px oklch(0 0 0 / 30%), 0 8px 24px -12px oklch(0 0 0 / 50%);
+  --gradient-mesh:
+    radial-gradient(46% 38% at 8% 0%, oklch(0.79 0.155 74 / 16%), transparent 62%),
+    radial-gradient(44% 36% at 96% 6%, oklch(0.66 0.21 320 / 18%), transparent 64%),
+    radial-gradient(50% 40% at 50% 100%, oklch(0.7 0.15 210 / 14%), transparent 66%);
 }
 
 @layer base {
@@ -159,6 +172,8 @@
 
   body {
     background-color: var(--color-background);
+    background-image: var(--gradient-mesh);
+    background-attachment: fixed;
     color: var(--color-foreground);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
@@ -172,6 +187,32 @@
 
 @utility bg-sunrise {
   background-image: var(--gradient-sunrise);
+}
+
+@utility bg-aurora {
+  background-image: var(--gradient-aurora);
+}
+
+@utility bg-candy {
+  background-image: var(--gradient-candy);
+}
+
+@utility bg-ocean {
+  background-image: var(--gradient-ocean);
+}
+
+@utility bg-mint {
+  background-image: var(--gradient-mint);
+}
+
+@utility text-aurora {
+  background-image: var(--gradient-aurora);
+  background-clip: text;
+  color: transparent;
+}
+
+@utility shadow-pop {
+  box-shadow: var(--shadow-pop);
 }
 
 @utility text-sunrise {

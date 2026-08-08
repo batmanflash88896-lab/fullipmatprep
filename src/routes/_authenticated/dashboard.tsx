@@ -40,7 +40,7 @@ function Dashboard() {
 
   return (
     <AppShell>
-      <section className="relative overflow-hidden rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
+      <section className="relative overflow-hidden rounded-3xl bg-aurora p-6 text-primary-foreground shadow-pop">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
@@ -52,14 +52,14 @@ function Dashboard() {
             <h1 className="text-2xl font-extrabold sm:text-3xl">
               {greeting}, {name.split(" ")[0]} 👋
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-sm opacity-90">
               {dayProgress === 100
                 ? "Today's target is done. Every day like this compounds."
                 : `${10 - qaDone - varcDone} questions left in today's plan. Ten a day beats ten hours on Sunday.`}
             </p>
             <div className="mt-4 max-w-md">
-              <Progress value={dayProgress} className="h-2.5" />
-              <p className="mt-1.5 text-xs text-muted-foreground">
+              <Progress value={dayProgress} className="h-2.5 bg-primary-foreground/25" />
+              <p className="mt-1.5 text-xs opacity-90">
                 {qaDone + varcDone}/10 questions today · {data?.profile?.streak ?? 0} day streak
               </p>
             </div>
@@ -69,16 +69,18 @@ function Dashboard() {
 
       <section className="mt-5 grid gap-4 sm:grid-cols-2">
         <PlanCard
-          to="/practice/QA"
+          section="QA"
           icon={<Calculator className="h-5 w-5" />}
+          accent="bg-sunrise"
           title="Daily Quant set"
           subtitle="5 questions · shortcuts + common mistakes"
           done={qaDone}
           accuracy={pct(data?.qa.correct ?? 0, data?.qa.total ?? 0)}
         />
         <PlanCard
-          to="/practice/VARC"
+          section="VARC"
           icon={<BookOpenText className="h-5 w-5" />}
+          accent="bg-ocean"
           title="Daily VARC set"
           subtitle="RC, para jumbles, grammar, vocabulary"
           done={varcDone}
@@ -144,7 +146,7 @@ function Dashboard() {
       <section className="mt-5 grid gap-4 sm:grid-cols-2">
         <Link
           to="/doubt"
-          className="group rounded-3xl border border-border/70 bg-card p-5 shadow-soft transition-transform hover:-translate-y-0.5"
+          className="group rounded-3xl border border-border/70 bg-card p-5 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-lift"
         >
           <MessagesSquare className="h-5 w-5 text-primary" />
           <h3 className="mt-2 text-lg font-bold">Ask Sunny, your AI tutor</h3>
@@ -154,7 +156,7 @@ function Dashboard() {
         </Link>
         <Link
           to="/vocabulary"
-          className="group rounded-3xl border border-border/70 bg-card p-5 shadow-soft transition-transform hover:-translate-y-0.5"
+          className="group rounded-3xl border border-border/70 bg-card p-5 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-lift"
         >
           <BookOpenText className="h-5 w-5 text-accent" />
           <h3 className="mt-2 text-lg font-bold">Vocabulary builder</h3>
@@ -163,20 +165,35 @@ function Dashboard() {
           </p>
         </Link>
       </section>
+
+      <section className="mt-5">
+        <Link
+          to="/mocks"
+          className="block overflow-hidden rounded-3xl bg-candy p-6 text-primary-foreground shadow-pop transition-transform hover:-translate-y-0.5"
+        >
+          <h3 className="font-display text-xl font-extrabold">Mock tests & previous year papers 🎯</h3>
+          <p className="mt-1 text-sm opacity-90">
+            IPMAT Indore, Rohtak and JIPMAT — year by year, timed, with full solutions. Plus a topic
+            mock after every class.
+          </p>
+        </Link>
+      </section>
     </AppShell>
   );
 }
 
 function PlanCard({
-  to,
+  section,
   icon,
+  accent,
   title,
   subtitle,
   done,
   accuracy,
 }: {
-  to: "/practice/QA" | "/practice/VARC";
+  section: "QA" | "VARC";
   icon: React.ReactNode;
+  accent: string;
   title: string;
   subtitle: string;
   done: number;
@@ -184,10 +201,13 @@ function PlanCard({
 }) {
   return (
     <Link
-      to={to}
-      className="group relative overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-soft transition-transform hover:-translate-y-0.5"
+      to="/practice/$section"
+      params={{ section }}
+      className="group relative overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-lift"
     >
-      <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-sunrise text-primary-foreground shadow-lift">
+      <span
+        className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl ${accent} text-primary-foreground shadow-lift`}
+      >
         {icon}
       </span>
       <h3 className="mt-3 text-lg font-bold">{title}</h3>

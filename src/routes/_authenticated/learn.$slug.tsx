@@ -148,6 +148,14 @@ function TopicClass() {
                 </p>
                 <div className="mt-5 flex flex-wrap justify-center gap-3">
                   <Button
+                    asChild
+                    className="bg-aurora text-primary-foreground shadow-pop"
+                  >
+                    <Link to="/mocks/topic/$slug" params={{ slug }}>
+                      Take the topic mock 🎯
+                    </Link>
+                  </Button>
+                  <Button
                     className="bg-sunrise text-primary-foreground shadow-lift"
                     onClick={() => {
                       setStep(0);
