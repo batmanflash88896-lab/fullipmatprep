@@ -21,7 +21,10 @@ import { Route as AuthenticatedDoubtIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedDoubtThreadIdRouteImport } from './routes/_authenticated/doubt.$threadId'
 import { Route as AuthenticatedLearnIndexRouteImport } from './routes/_authenticated/learn.index'
 import { Route as AuthenticatedLearnSlugRouteImport } from './routes/_authenticated/learn.$slug'
+import { Route as AuthenticatedMocksIndexRouteImport } from './routes/_authenticated/mocks.index'
+import { Route as AuthenticatedMocksPaperIdRouteImport } from './routes/_authenticated/mocks.$paperId'
 import { Route as AuthenticatedPracticeSectionRouteImport } from './routes/_authenticated/practice.$section'
+import { Route as AuthenticatedMocksTopicSlugRouteImport } from './routes/_authenticated/mocks.topic.$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -83,10 +86,27 @@ const AuthenticatedLearnSlugRoute = AuthenticatedLearnSlugRouteImport.update({
   path: '/learn/$slug',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMocksIndexRoute = AuthenticatedMocksIndexRouteImport.update({
+  id: '/mocks/',
+  path: '/mocks/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMocksPaperIdRoute =
+  AuthenticatedMocksPaperIdRouteImport.update({
+    id: '/mocks/$paperId',
+    path: '/mocks/$paperId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPracticeSectionRoute =
   AuthenticatedPracticeSectionRouteImport.update({
     id: '/practice/$section',
     path: '/practice/$section',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMocksTopicSlugRoute =
+  AuthenticatedMocksTopicSlugRouteImport.update({
+    id: '/mocks/topic/$slug',
+    path: '/mocks/topic/$slug',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
@@ -100,9 +120,12 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/doubt/$threadId': typeof AuthenticatedDoubtThreadIdRoute
   '/learn/$slug': typeof AuthenticatedLearnSlugRoute
+  '/mocks/$paperId': typeof AuthenticatedMocksPaperIdRoute
   '/practice/$section': typeof AuthenticatedPracticeSectionRoute
   '/doubt/': typeof AuthenticatedDoubtIndexRoute
   '/learn/': typeof AuthenticatedLearnIndexRoute
+  '/mocks/': typeof AuthenticatedMocksIndexRoute
+  '/mocks/topic/$slug': typeof AuthenticatedMocksTopicSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -113,9 +136,12 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/doubt/$threadId': typeof AuthenticatedDoubtThreadIdRoute
   '/learn/$slug': typeof AuthenticatedLearnSlugRoute
+  '/mocks/$paperId': typeof AuthenticatedMocksPaperIdRoute
   '/practice/$section': typeof AuthenticatedPracticeSectionRoute
   '/doubt': typeof AuthenticatedDoubtIndexRoute
   '/learn': typeof AuthenticatedLearnIndexRoute
+  '/mocks': typeof AuthenticatedMocksIndexRoute
+  '/mocks/topic/$slug': typeof AuthenticatedMocksTopicSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -129,9 +155,12 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/doubt/$threadId': typeof AuthenticatedDoubtThreadIdRoute
   '/_authenticated/learn/$slug': typeof AuthenticatedLearnSlugRoute
+  '/_authenticated/mocks/$paperId': typeof AuthenticatedMocksPaperIdRoute
   '/_authenticated/practice/$section': typeof AuthenticatedPracticeSectionRoute
   '/_authenticated/doubt/': typeof AuthenticatedDoubtIndexRoute
   '/_authenticated/learn/': typeof AuthenticatedLearnIndexRoute
+  '/_authenticated/mocks/': typeof AuthenticatedMocksIndexRoute
+  '/_authenticated/mocks/topic/$slug': typeof AuthenticatedMocksTopicSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -145,9 +174,12 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/doubt/$threadId'
     | '/learn/$slug'
+    | '/mocks/$paperId'
     | '/practice/$section'
     | '/doubt/'
     | '/learn/'
+    | '/mocks/'
+    | '/mocks/topic/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -158,9 +190,12 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/doubt/$threadId'
     | '/learn/$slug'
+    | '/mocks/$paperId'
     | '/practice/$section'
     | '/doubt'
     | '/learn'
+    | '/mocks'
+    | '/mocks/topic/$slug'
   id:
     | '__root__'
     | '/'
@@ -173,9 +208,12 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/_authenticated/doubt/$threadId'
     | '/_authenticated/learn/$slug'
+    | '/_authenticated/mocks/$paperId'
     | '/_authenticated/practice/$section'
     | '/_authenticated/doubt/'
     | '/_authenticated/learn/'
+    | '/_authenticated/mocks/'
+    | '/_authenticated/mocks/topic/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -271,11 +309,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLearnSlugRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/mocks/': {
+      id: '/_authenticated/mocks/'
+      path: '/mocks'
+      fullPath: '/mocks/'
+      preLoaderRoute: typeof AuthenticatedMocksIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/mocks/$paperId': {
+      id: '/_authenticated/mocks/$paperId'
+      path: '/mocks/$paperId'
+      fullPath: '/mocks/$paperId'
+      preLoaderRoute: typeof AuthenticatedMocksPaperIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/practice/$section': {
       id: '/_authenticated/practice/$section'
       path: '/practice/$section'
       fullPath: '/practice/$section'
       preLoaderRoute: typeof AuthenticatedPracticeSectionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/mocks/topic/$slug': {
+      id: '/_authenticated/mocks/topic/$slug'
+      path: '/mocks/topic/$slug'
+      fullPath: '/mocks/topic/$slug'
+      preLoaderRoute: typeof AuthenticatedMocksTopicSlugRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
   }
@@ -300,8 +359,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPlanRoute: typeof AuthenticatedPlanRoute
   AuthenticatedVocabularyRoute: typeof AuthenticatedVocabularyRoute
   AuthenticatedLearnSlugRoute: typeof AuthenticatedLearnSlugRoute
+  AuthenticatedMocksPaperIdRoute: typeof AuthenticatedMocksPaperIdRoute
   AuthenticatedPracticeSectionRoute: typeof AuthenticatedPracticeSectionRoute
   AuthenticatedLearnIndexRoute: typeof AuthenticatedLearnIndexRoute
+  AuthenticatedMocksIndexRoute: typeof AuthenticatedMocksIndexRoute
+  AuthenticatedMocksTopicSlugRoute: typeof AuthenticatedMocksTopicSlugRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -310,8 +372,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPlanRoute: AuthenticatedPlanRoute,
   AuthenticatedVocabularyRoute: AuthenticatedVocabularyRoute,
   AuthenticatedLearnSlugRoute: AuthenticatedLearnSlugRoute,
+  AuthenticatedMocksPaperIdRoute: AuthenticatedMocksPaperIdRoute,
   AuthenticatedPracticeSectionRoute: AuthenticatedPracticeSectionRoute,
   AuthenticatedLearnIndexRoute: AuthenticatedLearnIndexRoute,
+  AuthenticatedMocksIndexRoute: AuthenticatedMocksIndexRoute,
+  AuthenticatedMocksTopicSlugRoute: AuthenticatedMocksTopicSlugRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -326,13 +391,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

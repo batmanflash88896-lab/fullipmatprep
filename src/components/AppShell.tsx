@@ -11,6 +11,7 @@ const NAV = [
   { to: "/dashboard", label: "Today" },
   { to: "/plan", label: "My plan" },
   { to: "/learn", label: "Learn" },
+  { to: "/mocks", label: "Mocks" },
   { to: "/practice/QA", label: "Quant" },
   { to: "/practice/VARC", label: "VARC" },
   { to: "/vocabulary", label: "Vocab" },
