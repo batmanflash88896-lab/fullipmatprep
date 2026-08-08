@@ -45,14 +45,27 @@ Rules:
 - Every question needs a trick and a common_mistake.
 - For VARC reading questions, put the passage text in "passage" and repeat the same passage on each question that uses it.`;
 
-export function generatePyqPaper(exam: string, year: number, count: number) {
-  return run(
-    `You are an IPMAT paper setter who has taught the exam for 15 years and remembers every past paper. You reproduce exam-accurate practice papers.`,
-    `Create a ${count}-question practice paper that mirrors the ${exam} ${year} paper as closely as possible: same section split, same topic mix, same difficulty curve and same question styles used that year.
-Roughly 60% Quantitative Ability (section "QA") and 40% Verbal Ability / Reading Comprehension (section "VARC"), including one short RC passage with 3 questions.
-Order questions the way the real paper does: easier first, hardest last.
+const SETTER = `You are an IPMAT paper setter who has taught the exam for 15 years and remembers every past paper. You reproduce exam-accurate practice papers.`;
+
+export async function generatePyqPaper(exam: string, year: number, count: number) {
+  const qaCount = Math.max(6, Math.round(count * 0.6));
+  const varcCount = Math.max(4, count - qaCount);
+  const [qa, varc] = await Promise.all([
+    run(
+      SETTER,
+      `Create the Quantitative Ability section (section "QA") of a practice paper mirroring the ${exam} ${year} paper: same topic mix, same difficulty curve, same question styles used that year. Exactly ${qaCount} questions, easier first and hardest last.
 ${SHAPE}`,
-  );
+    ),
+    run(
+      SETTER,
+      `Create the Verbal Ability & Reading Comprehension section (section "VARC") of a practice paper mirroring the ${exam} ${year} paper. Exactly ${varcCount} questions: one short reading passage with 3 questions on it, then vocabulary, grammar, para-jumble and inference questions in the styles that paper used.
+${SHAPE}`,
+    ),
+  ]);
+  return [
+    ...qa.map((q) => ({ ...q, section: "QA" as const })),
+    ...varc.map((q) => ({ ...q, section: "VARC" as const })),
+  ];
 }
 
 export function generateTopicPaper(
