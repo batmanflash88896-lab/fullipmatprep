@@ -117,3 +117,20 @@ export const saveTopicResult = createServerFn({ method: "POST" })
 
     return { status };
   });
+
+export const askSunny = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { slug: string; question: string; context: string }) => input)
+  .handler(async ({ data }) => {
+    const found = findTopic(data.slug);
+    if (!found) throw new Error("Unknown topic");
+    const { answerDoubt } = await import("@/lib/learn.server");
+    const answer = await answerDoubt(
+      found.chapter.name,
+      found.topic.name,
+      found.chapter.section,
+      data.context.slice(-2500),
+      data.question.slice(0, 600),
+    );
+    return { answer };
+  });

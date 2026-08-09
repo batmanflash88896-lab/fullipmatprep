@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { Mascot } from "@/components/Mascot";
 import { Button } from "@/components/ui/button";
-import { MockRunner } from "@/components/MockRunner";
+import { ExamRunner } from "@/components/ExamRunner";
 import { getMockPaper } from "@/lib/mocks.functions";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 
@@ -31,6 +31,10 @@ function MockPaperPage() {
     retry: false,
   });
 
+  if (data) {
+    return <ExamRunner paper={data.paper} questions={data.questions} />;
+  }
+
   return (
     <AppShell>
       <Link
@@ -39,10 +43,6 @@ function MockPaperPage() {
       >
         <ArrowLeft className="h-4 w-4" /> All mocks
       </Link>
-
-      {data && (
-        <h1 className="mb-4 font-display text-3xl font-extrabold tracking-tight">{data.paper.title}</h1>
-      )}
 
       {isLoading && (
         <div className="rounded-3xl border border-border/70 bg-card p-8 text-center shadow-soft">
@@ -64,7 +64,6 @@ function MockPaperPage() {
         </div>
       )}
 
-      {data && <MockRunner paper={data.paper} questions={data.questions} />}
     </AppShell>
   );
 }
