@@ -3,6 +3,17 @@ import { NO_LATEX_RULE } from "@/lib/format";
 
 const MODEL = "google/gemini-3.6-flash";
 
+export function aiError(e: unknown) {
+  const msg = e instanceof Error ? e.message : String(e);
+  if (/payment required|not enough credits|402/i.test(msg))
+    return new Error(
+      "Sunny is out of AI credits right now. Top up workspace AI credits to keep classes running.",
+    );
+  if (/rate limit|429/i.test(msg))
+    return new Error("Sunny is a bit busy 😅 Try again in a few seconds.");
+  return new Error("Sunny could not build this right now. Try again.");
+}
+
 export function extractJson(text: string): Lesson {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   const raw = (fenced?.[1] ?? text) as string;
@@ -55,7 +66,9 @@ Hard rules:
 - Every text is conversational and short. Emojis in most beats. No headings, no markdown, no bullet lists.\n\n${NO_LATEX_RULE}`,
   });
 
-  const text = await result.text;
+  const text = await result.text.catch((e: unknown) => {
+    throw aiError(e);
+  });
   const lesson = extractJson(text);
   if (!Array.isArray(lesson.beats) || lesson.beats.length === 0) {
     throw new Error("Sunny could not build this class. Try again.");
@@ -85,5 +98,8 @@ ${context}
 
 Student's doubt: ${question}`,
   });
-  return (await result.text).trim();
+  const answer = await result.text.catch((e: unknown) => {
+    throw aiError(e);
+  });
+  return answer.trim();
 }
