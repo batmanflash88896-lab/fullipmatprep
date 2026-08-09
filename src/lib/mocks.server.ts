@@ -36,9 +36,12 @@ async function run(system: string, prompt: string) {
   const gateway = createLovableAiGatewayProvider(key);
   const result = streamText({ model: gateway(MODEL), temperature: 0.4, system, prompt });
   const { aiError } = await import("@/lib/learn.server");
-  const text = await result.text.catch((e: unknown) => {
+  let text: string;
+  try {
+    text = await result.text;
+  } catch (e) {
     throw aiError(e);
-  });
+  }
   return extractQuestions(text);
 }
 

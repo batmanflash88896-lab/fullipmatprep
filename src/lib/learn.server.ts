@@ -66,9 +66,12 @@ Hard rules:
 - Every text is conversational and short. Emojis in most beats. No headings, no markdown, no bullet lists.\n\n${NO_LATEX_RULE}`,
   });
 
-  const text = await result.text.catch((e: unknown) => {
+  let text: string;
+  try {
+    text = await result.text;
+  } catch (e) {
     throw aiError(e);
-  });
+  }
   const lesson = extractJson(text);
   if (!Array.isArray(lesson.beats) || lesson.beats.length === 0) {
     throw new Error("Sunny could not build this class. Try again.");
@@ -98,8 +101,9 @@ ${context}
 
 Student's doubt: ${question}`,
   });
-  const answer = await result.text.catch((e: unknown) => {
+  try {
+    return (await result.text).trim();
+  } catch (e) {
     throw aiError(e);
-  });
-  return answer.trim();
+  }
 }
