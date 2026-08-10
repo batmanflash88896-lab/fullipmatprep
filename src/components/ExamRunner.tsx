@@ -6,6 +6,7 @@ import { Mascot } from "@/components/Mascot";
 import { cn } from "@/lib/utils";
 import { pretty } from "@/lib/format";
 import { submitMock, type MockPaper, type MockQuestion } from "@/lib/mocks.functions";
+import { getPattern } from "@/lib/exam-patterns";
 import {
   CheckCircle2,
   Clock,
@@ -27,25 +28,48 @@ function fmt(sec: number) {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
+/** "3/4", "0.75", " 12 " all compare cleanly against the setter's answer. */
+function normalize(v: string) {
+  const t = v.trim().replace(/\s+/g, "").replace(/,/g, "");
+  if (!t) return "";
+  const frac = t.match(/^(-?\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/);
+  const num = frac ? Number(frac[1]) / Number(frac[2]) : Number(t);
+  if (Number.isFinite(num)) return String(Math.round(num * 1e6) / 1e6);
+  return t.toLowerCase();
+}
+
 export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: MockQuestion[] }) {
   const queryClient = useQueryClient();
-  const sections = useMemo(() => {
-    const order: MockQuestion["section"][] = ["QA", "VARC"];
-    return order.filter((s) => questions.some((q) => q.section === s));
-  }, [questions]);
+  const pattern = useMemo(() => getPattern(paper.pattern_key), [paper.pattern_key]);
 
-  const bySection = useMemo(
-    () =>
-      Object.fromEntries(
-        sections.map((s) => [s, questions.filter((q) => q.section === s)]),
-      ) as Record<string, MockQuestion[]>,
-    [sections, questions],
-  );
+  /** Ordered exam sections (e.g. QA-MCQ → QA Short Answer → VARC) with their questions. */
+  const groups = useMemo(() => {
+    const built = pattern.sections
+      .map((s) => ({
+        key: s.key,
+        label: s.label,
+        short: s.short,
+        questions: questions.filter((q) => q.section === s.code && q.qtype === s.qtype),
+      }))
+      .filter((g) => g.questions.length > 0);
+    if (built.length > 0) return built;
+    const order: MockQuestion["section"][] = ["QA", "LR", "VARC"];
+    return order
+      .map((code) => ({
+        key: code,
+        label:
+          code === "QA" ? "Quantitative Ability" : code === "LR" ? "Logical Reasoning" : "Verbal Ability & RC",
+        short: code,
+        questions: questions.filter((q) => q.section === code),
+      }))
+      .filter((g) => g.questions.length > 0);
+  }, [pattern, questions]);
 
   const [started, setStarted] = useState(false);
   const [sectionIdx, setSectionIdx] = useState(0);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [typed, setTyped] = useState<Record<string, string>>({});
   const [marked, setMarked] = useState<Record<string, boolean>>({});
   const [visited, setVisited] = useState<Record<string, boolean>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -54,8 +78,8 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
   const [seconds, setSeconds] = useState(0);
   const saved = useRef(false);
 
-  const section = sections[sectionIdx] ?? "QA";
-  const list = bySection[section] ?? [];
+  const group = groups[sectionIdx] ?? groups[0];
+  const list = group?.questions ?? [];
   const current = list[index];
 
   useEffect(() => {
