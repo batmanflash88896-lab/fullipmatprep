@@ -233,7 +233,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
         <h3 className="font-display text-xl font-extrabold">Full solutions</h3>
         {questions.map((q, i) => {
           const picked = answers[q.id];
-          const right = picked === q.correct_index;
+          const right = isCorrect(q);
           return (
             <div key={q.id} className="rounded-3xl border border-border/70 bg-card p-5 shadow-soft">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
@@ -241,6 +241,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
                   Q{i + 1}
                 </span>
                 {q.section} {q.topic ? `· ${q.topic}` : ""}
+                {q.qtype === "tita" ? "· Short answer" : ""}
               </div>
               {q.passage && (
                 <p className="mt-3 whitespace-pre-line rounded-2xl bg-secondary/60 p-3 text-sm leading-relaxed">
@@ -248,8 +249,23 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
                 </p>
               )}
               <p className="mt-3 whitespace-pre-line font-medium">{pretty(q.prompt)}</p>
+              {q.qtype === "tita" ? (
+                <div className="mt-3 grid gap-2 text-sm">
+                  <div className="rounded-2xl border border-success/50 bg-success/10 px-3 py-2">
+                    Correct answer: <b>{pretty(q.answer_text ?? "")}</b>
+                  </div>
+                  <div
+                    className={cn(
+                      "rounded-2xl border px-3 py-2",
+                      right ? "border-success/50 bg-success/10" : "border-destructive/50 bg-destructive/10",
+                    )}
+                  >
+                    You typed: <b>{typed[q.id]?.trim() || "—"}</b>
+                  </div>
+                </div>
+              ) : (
               <div className="mt-3 grid gap-2">
-                {q.options.map((opt, oi) => (
+                {(q.options ?? []).map((opt, oi) => (
                   <div
                     key={oi}
                     className={cn(
@@ -269,6 +285,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
                   </div>
                 ))}
               </div>
+              )}
               <p className="mt-3 whitespace-pre-line text-sm leading-relaxed">{pretty(q.solution)}</p>
               {q.trick && (
                 <p className="mt-2 flex gap-2 rounded-2xl bg-accent/15 p-3 text-sm">
