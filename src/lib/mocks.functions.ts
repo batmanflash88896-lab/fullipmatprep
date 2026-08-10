@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { findTopic } from "@/lib/syllabus";
+import { getPattern } from "@/lib/exam-patterns";
 
 export type MockPaper = {
   id: string;
@@ -13,17 +14,20 @@ export type MockPaper = {
   topic_name: string | null;
   duration_min: number;
   question_count: number;
+  pattern_key: string;
 };
 
 export type MockQuestion = {
   id: string;
   position: number;
-  section: "QA" | "VARC";
+  section: "QA" | "VARC" | "LR";
+  qtype: "mcq" | "tita";
   topic: string | null;
   passage: string | null;
   prompt: string;
-  options: string[];
-  correct_index: number;
+  options: string[] | null;
+  correct_index: number | null;
+  answer_text: string | null;
   solution: string;
   trick: string | null;
   common_mistake: string | null;
@@ -89,19 +93,28 @@ export const getMockPaper = createServerFn({ method: "POST" })
         profile?.target_college ?? null,
       );
     } else {
-      generated = await generatePyqPaper(paper.exam, paper.year ?? 2024, paper.question_count);
+      generated = await generatePyqPaper(
+        paper.exam,
+        paper.year ?? 2024,
+        getPattern(paper.pattern_key),
+      );
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const rows = generated.map((q, i) => ({
       paper_id: paper.id,
       position: i,
-      section: q.section === "VARC" ? "VARC" : "QA",
+      section: q.section === "VARC" ? "VARC" : q.section === "LR" ? "LR" : "QA",
+      qtype: q.qtype === "tita" ? "tita" : "mcq",
       topic: q.topic ?? paper.topic_name ?? null,
       passage: q.passage ?? null,
       prompt: q.prompt,
-      options: q.options as unknown as never,
-      correct_index: Math.max(0, Math.min(q.options.length - 1, q.correct_index ?? 0)),
+      options: (q.qtype === "tita" ? null : q.options ?? []) as unknown as never,
+      correct_index:
+        q.qtype === "tita"
+          ? null
+          : Math.max(0, Math.min((q.options?.length ?? 1) - 1, q.correct_index ?? 0)),
+      answer_text: q.qtype === "tita" ? (q.answer_text ?? "").trim() : null,
       solution: q.solution ?? "",
       trick: q.trick ?? null,
       common_mistake: q.common_mistake ?? null,
