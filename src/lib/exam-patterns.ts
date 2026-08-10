@@ -160,7 +160,7 @@ const PATTERNS = {
       "Difficulty sits around CBSE class 10–12 level, so accuracy decides the cut-off.",
     ],
   },
-};
+} satisfies Record<string, ExamPattern>;
 
 export const TOPIC_PATTERN: ExamPattern = {
   key: "topic",
@@ -172,8 +172,6 @@ export const TOPIC_PATTERN: ExamPattern = {
   sections: [],
   notes: ["Short topic test with IPMAT-level marking: +4 correct, −1 wrong."],
 };
-
-} satisfies Record<string, ExamPattern>;
 
 export const EXAM_PATTERNS: Record<string, ExamPattern> = PATTERNS;
 
