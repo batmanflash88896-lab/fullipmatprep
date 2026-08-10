@@ -314,7 +314,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
   }
 
   /* ---------------- Live exam ---------------- */
-  const answeredCount = list.filter((q) => answers[q.id] !== undefined).length;
+  const answeredCount = list.filter((q) => attempted(q)).length;
 
   return (
     <div className="min-h-dvh bg-muted/40">
@@ -338,19 +338,19 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
           </Button>
         </div>
         <div className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 pb-2">
-          {sections.map((s, i) => (
+          {groups.map((g, i) => (
             <button
-              key={s}
+              key={g.key}
               onClick={() => {
                 setSectionIdx(i);
                 setIndex(0);
               }}
               className={cn(
-                "rounded-t-xl px-4 py-2 text-sm font-bold transition-colors",
+                "shrink-0 rounded-t-xl px-4 py-2 text-sm font-bold transition-colors",
                 i === sectionIdx ? "bg-aurora text-primary-foreground shadow-lift" : "bg-secondary text-muted-foreground",
               )}
             >
-              {s === "QA" ? "Quantitative Ability" : "Verbal Ability & RC"}
+              {g.label}
             </button>
           ))}
         </div>
@@ -364,6 +364,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
                 <p className="text-xs font-bold uppercase tracking-wide text-primary">
                   Question {index + 1} of {list.length}
                   {current.topic ? ` · ${current.topic}` : ""}
+                  {current.qtype === "tita" ? " · Short answer (no negative marking)" : ""}
                 </p>
                 <button
                   onClick={() => setMarked((m) => ({ ...m, [current.id]: !m[current.id] }))}
@@ -386,8 +387,26 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
                 {pretty(current.prompt)}
               </p>
 
+              {current.qtype === "tita" ? (
+                <div className="mt-4">
+                  <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    Type your answer
+                  </label>
+                  <input
+                    inputMode="decimal"
+                    autoComplete="off"
+                    value={typed[current.id] ?? ""}
+                    onChange={(e) => setTyped((t) => ({ ...t, [current.id]: e.target.value }))}
+                    placeholder="e.g. 48 or 12.5 or 3/4"
+                    className="mt-2 w-full rounded-2xl border-2 border-border bg-background p-3 text-lg font-semibold tabular-nums outline-none focus:border-primary"
+                  />
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Numbers only — no units, no words. There is no penalty for a wrong short answer.
+                  </p>
+                </div>
+              ) : (
               <div className="mt-4 grid gap-2.5">
-                {current.options.map((opt, oi) => (
+                {(current.options ?? []).map((opt, oi) => (
                   <button
                     key={oi}
                     onClick={() => setAnswers((a) => ({ ...a, [current.id]: oi }))}
@@ -403,6 +422,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
                   </button>
                 ))}
               </div>
+              )}
 
               <div className="mt-5 flex flex-wrap gap-2">
                 <Button variant="outline" disabled={index === 0} onClick={() => go(index - 1)}>
@@ -411,11 +431,13 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
                 <Button
                   variant="outline"
                   onClick={() =>
-                    setAnswers((a) => {
-                      const next = { ...a };
-                      delete next[current.id];
-                      return next;
-                    })
+                    current.qtype === "tita"
+                      ? setTyped((t) => ({ ...t, [current.id]: "" }))
+                      : setAnswers((a) => {
+                          const next = { ...a };
+                          delete next[current.id];
+                          return next;
+                        })
                   }
                 >
                   Clear response
