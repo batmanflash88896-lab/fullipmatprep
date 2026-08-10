@@ -92,10 +92,24 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
     if (current) setVisited((v) => (v[current.id] ? v : { ...v, [current.id]: true }));
   }, [current]);
 
-  const score = useMemo(
-    () => questions.filter((q) => answers[q.id] === q.correct_index).length,
-    [questions, answers],
-  );
+  function attempted(q: MockQuestion) {
+    return q.qtype === "tita" ? (typed[q.id] ?? "").trim().length > 0 : answers[q.id] !== undefined;
+  }
+
+  function isCorrect(q: MockQuestion) {
+    if (q.qtype === "tita") {
+      const t = typed[q.id];
+      if (!t || !q.answer_text) return false;
+      return normalize(t) === normalize(q.answer_text);
+    }
+    return answers[q.id] === q.correct_index;
+  }
+
+  const score = questions.filter((q) => isCorrect(q)).length;
+  const wrongMcq = questions.filter((q) => q.qtype !== "tita" && attempted(q) && !isCorrect(q)).length;
+  const wrongTita = questions.filter((q) => q.qtype === "tita" && attempted(q) && !isCorrect(q)).length;
+  const marks = score * pattern.correct - wrongMcq * pattern.negative - wrongTita * pattern.negativeTita;
+  const maxMarks = questions.length * pattern.correct;
   const left = Math.max(0, paper.duration_min * 60 - seconds);
 
   function finish() {
@@ -115,7 +129,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
   }, [left, submitted, started]);
 
   function statusOf(q: MockQuestion): Status {
-    const a = answers[q.id] !== undefined;
+    const a = attempted(q);
     const m = marked[q.id];
     if (a && m) return "answeredMarked";
     if (m) return "marked";
@@ -129,7 +143,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
       setIndex(next);
       setPaletteOpen(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } else if (next >= list.length && sectionIdx < sections.length - 1) {
+    } else if (next >= list.length && sectionIdx < groups.length - 1) {
       setSectionIdx(sectionIdx + 1);
       setIndex(0);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -143,24 +157,29 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
         <div className="overflow-hidden rounded-3xl bg-aurora p-7 text-primary-foreground shadow-pop">
           <Mascot size={64} mood="cheer" float />
           <h1 className="mt-3 font-display text-3xl font-extrabold">{paper.title}</h1>
-          <p className="mt-1 text-sm opacity-90">Exam-day interface · sectional order · live timer</p>
+          <p className="mt-1 text-sm opacity-90">
+            {pattern.label} · real exam interface · live timer
+          </p>
         </div>
 
         <div className="mt-5 rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
           <h2 className="font-display text-xl font-extrabold">General instructions</h2>
           <ul className="mt-3 space-y-2 text-sm leading-relaxed text-muted-foreground">
             <li>• Total duration: <b className="text-foreground">{paper.duration_min} minutes</b> for {questions.length} questions.</li>
-            <li>• Sections appear in exam order: {sections.join(" → ")}. You may move between them any time.</li>
+            <li>• Sections appear in exam order: {groups.map((g) => g.short).join(" → ")}. You may move between them any time.</li>
+            {pattern.notes.map((n) => (
+              <li key={n}>• {n}</li>
+            ))}
             <li>• The question palette shows Answered, Not answered, Marked for review and Not visited.</li>
             <li>• Use <b className="text-foreground">Mark for review</b> to flag a question and come back later.</li>
             <li>• The paper submits automatically when the timer hits 00:00.</li>
             <li>• Full solutions, shortcuts and traps unlock right after you submit.</li>
           </ul>
           <div className="mt-5 grid gap-2 sm:grid-cols-2">
-            {sections.map((s) => (
-              <div key={s} className="rounded-2xl bg-secondary/60 p-4">
-                <p className="font-display text-lg font-extrabold">{s === "QA" ? "Quantitative Ability" : "Verbal Ability & RC"}</p>
-                <p className="text-sm text-muted-foreground">{bySection[s]?.length ?? 0} questions</p>
+            {groups.map((g) => (
+              <div key={g.key} className="rounded-2xl bg-secondary/60 p-4">
+                <p className="font-display text-lg font-extrabold">{g.label}</p>
+                <p className="text-sm text-muted-foreground">{g.questions.length} questions</p>
               </div>
             ))}
           </div>
@@ -178,26 +197,31 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
 
   /* ---------------- Result + solutions ---------------- */
   if (submitted) {
-    const pct = questions.length ? Math.round((score / questions.length) * 100) : 0;
+    const tried = questions.filter((q) => attempted(q)).length;
+    const pct = tried ? Math.round((score / tried) * 100) : 0;
     return (
       <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
         <div className="overflow-hidden rounded-3xl bg-aurora p-7 text-center text-primary-foreground shadow-pop animate-pop">
           <Mascot size={76} mood={pct >= 60 ? "happy" : "oops"} float className="mx-auto" />
           <h2 className="mt-3 font-display text-3xl font-extrabold">
-            {score}/{questions.length} · {pct}%
+            {marks}/{maxMarks} marks
           </h2>
           <p className="mt-1 text-sm opacity-90">
-            Finished in {fmt(seconds)} · {paper.title}
+            {score} correct · {wrongMcq + wrongTita} wrong · {pct}% accuracy on attempts · {fmt(seconds)}
+          </p>
+          <p className="mt-1 text-xs opacity-80">
+            Marking: +{pattern.correct} correct, −{pattern.negative} wrong MCQ
+            {pattern.negativeTita === 0 ? ", no negative on short answers" : ""}
           </p>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          {sections.map((s) => {
-            const qs = bySection[s] ?? [];
-            const sc = qs.filter((q) => answers[q.id] === q.correct_index).length;
+          {groups.map((g) => {
+            const qs = g.questions;
+            const sc = qs.filter((q) => isCorrect(q)).length;
             return (
-              <div key={s} className="rounded-3xl border border-border/70 bg-card p-5 shadow-soft">
-                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{s}</p>
+              <div key={g.key} className="rounded-3xl border border-border/70 bg-card p-5 shadow-soft">
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{g.label}</p>
                 <p className="font-display text-2xl font-extrabold">
                   {sc}/{qs.length}
                 </p>
