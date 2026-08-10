@@ -509,8 +509,9 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
             <Mascot size={56} mood="thinking" />
             <h3 className="mt-2 font-display text-xl font-extrabold">Submit the paper?</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              {Object.keys(answers).length}/{questions.length} answered ·{" "}
-              {questions.length - Object.keys(answers).length} left · {fmt(left)} still on the clock.
+              {questions.filter((q) => attempted(q)).length}/{questions.length} answered ·{" "}
+              {questions.length - questions.filter((q) => attempted(q)).length} left · {fmt(left)} still on
+              the clock.
             </p>
             <div className="mt-5 flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setConfirming(false)}>
