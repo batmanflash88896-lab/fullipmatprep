@@ -195,6 +195,7 @@ export type Database = {
           exam: string
           id: string
           kind: string
+          pattern_key: string
           question_count: number
           section: string
           sort_order: number
@@ -209,6 +210,7 @@ export type Database = {
           exam: string
           id?: string
           kind?: string
+          pattern_key?: string
           question_count?: number
           section?: string
           sort_order?: number
@@ -223,6 +225,7 @@ export type Database = {
           exam?: string
           id?: string
           kind?: string
+          pattern_key?: string
           question_count?: number
           section?: string
           sort_order?: number
@@ -235,45 +238,51 @@ export type Database = {
       }
       mock_questions: {
         Row: {
+          answer_text: string | null
           common_mistake: string | null
-          correct_index: number
+          correct_index: number | null
           created_at: string
           id: string
-          options: Json
+          options: Json | null
           paper_id: string
           passage: string | null
           position: number
           prompt: string
+          qtype: string
           section: string
           solution: string
           topic: string | null
           trick: string | null
         }
         Insert: {
+          answer_text?: string | null
           common_mistake?: string | null
-          correct_index: number
+          correct_index?: number | null
           created_at?: string
           id?: string
-          options: Json
+          options?: Json | null
           paper_id: string
           passage?: string | null
           position?: number
           prompt: string
+          qtype?: string
           section?: string
           solution: string
           topic?: string | null
           trick?: string | null
         }
         Update: {
+          answer_text?: string | null
           common_mistake?: string | null
-          correct_index?: number
+          correct_index?: number | null
           created_at?: string
           id?: string
-          options?: Json
+          options?: Json | null
           paper_id?: string
           passage?: string | null
           position?: number
           prompt?: string
+          qtype?: string
           section?: string
           solution?: string
           topic?: string | null

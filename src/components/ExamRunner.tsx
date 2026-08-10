@@ -6,6 +6,7 @@ import { Mascot } from "@/components/Mascot";
 import { cn } from "@/lib/utils";
 import { pretty } from "@/lib/format";
 import { submitMock, type MockPaper, type MockQuestion } from "@/lib/mocks.functions";
+import { getPattern } from "@/lib/exam-patterns";
 import {
   CheckCircle2,
   Clock,
@@ -27,25 +28,48 @@ function fmt(sec: number) {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
+/** "3/4", "0.75", " 12 " all compare cleanly against the setter's answer. */
+function normalize(v: string) {
+  const t = v.trim().replace(/\s+/g, "").replace(/,/g, "");
+  if (!t) return "";
+  const frac = t.match(/^(-?\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/);
+  const num = frac ? Number(frac[1]) / Number(frac[2]) : Number(t);
+  if (Number.isFinite(num)) return String(Math.round(num * 1e6) / 1e6);
+  return t.toLowerCase();
+}
+
 export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: MockQuestion[] }) {
   const queryClient = useQueryClient();
-  const sections = useMemo(() => {
-    const order: MockQuestion["section"][] = ["QA", "VARC"];
-    return order.filter((s) => questions.some((q) => q.section === s));
-  }, [questions]);
+  const pattern = useMemo(() => getPattern(paper.pattern_key), [paper.pattern_key]);
 
-  const bySection = useMemo(
-    () =>
-      Object.fromEntries(
-        sections.map((s) => [s, questions.filter((q) => q.section === s)]),
-      ) as Record<string, MockQuestion[]>,
-    [sections, questions],
-  );
+  /** Ordered exam sections (e.g. QA-MCQ → QA Short Answer → VARC) with their questions. */
+  const groups = useMemo(() => {
+    const built = pattern.sections
+      .map((s) => ({
+        key: s.key,
+        label: s.label,
+        short: s.short,
+        questions: questions.filter((q) => q.section === s.code && q.qtype === s.qtype),
+      }))
+      .filter((g) => g.questions.length > 0);
+    if (built.length > 0) return built;
+    const order: MockQuestion["section"][] = ["QA", "LR", "VARC"];
+    return order
+      .map((code) => ({
+        key: code,
+        label:
+          code === "QA" ? "Quantitative Ability" : code === "LR" ? "Logical Reasoning" : "Verbal Ability & RC",
+        short: code,
+        questions: questions.filter((q) => q.section === code),
+      }))
+      .filter((g) => g.questions.length > 0);
+  }, [pattern, questions]);
 
   const [started, setStarted] = useState(false);
   const [sectionIdx, setSectionIdx] = useState(0);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [typed, setTyped] = useState<Record<string, string>>({});
   const [marked, setMarked] = useState<Record<string, boolean>>({});
   const [visited, setVisited] = useState<Record<string, boolean>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -54,8 +78,8 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
   const [seconds, setSeconds] = useState(0);
   const saved = useRef(false);
 
-  const section = sections[sectionIdx] ?? "QA";
-  const list = bySection[section] ?? [];
+  const group = groups[sectionIdx] ?? groups[0];
+  const list = group?.questions ?? [];
   const current = list[index];
 
   useEffect(() => {
@@ -68,10 +92,24 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
     if (current) setVisited((v) => (v[current.id] ? v : { ...v, [current.id]: true }));
   }, [current]);
 
-  const score = useMemo(
-    () => questions.filter((q) => answers[q.id] === q.correct_index).length,
-    [questions, answers],
-  );
+  function attempted(q: MockQuestion) {
+    return q.qtype === "tita" ? (typed[q.id] ?? "").trim().length > 0 : answers[q.id] !== undefined;
+  }
+
+  function isCorrect(q: MockQuestion) {
+    if (q.qtype === "tita") {
+      const t = typed[q.id];
+      if (!t || !q.answer_text) return false;
+      return normalize(t) === normalize(q.answer_text);
+    }
+    return answers[q.id] === q.correct_index;
+  }
+
+  const score = questions.filter((q) => isCorrect(q)).length;
+  const wrongMcq = questions.filter((q) => q.qtype !== "tita" && attempted(q) && !isCorrect(q)).length;
+  const wrongTita = questions.filter((q) => q.qtype === "tita" && attempted(q) && !isCorrect(q)).length;
+  const marks = score * pattern.correct - wrongMcq * pattern.negative - wrongTita * pattern.negativeTita;
+  const maxMarks = questions.length * pattern.correct;
   const left = Math.max(0, paper.duration_min * 60 - seconds);
 
   function finish() {
@@ -91,7 +129,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
   }, [left, submitted, started]);
 
   function statusOf(q: MockQuestion): Status {
-    const a = answers[q.id] !== undefined;
+    const a = attempted(q);
     const m = marked[q.id];
     if (a && m) return "answeredMarked";
     if (m) return "marked";
@@ -105,7 +143,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
       setIndex(next);
       setPaletteOpen(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } else if (next >= list.length && sectionIdx < sections.length - 1) {
+    } else if (next >= list.length && sectionIdx < groups.length - 1) {
       setSectionIdx(sectionIdx + 1);
       setIndex(0);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -119,24 +157,29 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
         <div className="overflow-hidden rounded-3xl bg-aurora p-7 text-primary-foreground shadow-pop">
           <Mascot size={64} mood="cheer" float />
           <h1 className="mt-3 font-display text-3xl font-extrabold">{paper.title}</h1>
-          <p className="mt-1 text-sm opacity-90">Exam-day interface · sectional order · live timer</p>
+          <p className="mt-1 text-sm opacity-90">
+            {pattern.label} · real exam interface · live timer
+          </p>
         </div>
 
         <div className="mt-5 rounded-3xl border border-border/70 bg-card p-6 shadow-soft">
           <h2 className="font-display text-xl font-extrabold">General instructions</h2>
           <ul className="mt-3 space-y-2 text-sm leading-relaxed text-muted-foreground">
             <li>• Total duration: <b className="text-foreground">{paper.duration_min} minutes</b> for {questions.length} questions.</li>
-            <li>• Sections appear in exam order: {sections.join(" → ")}. You may move between them any time.</li>
+            <li>• Sections appear in exam order: {groups.map((g) => g.short).join(" → ")}. You may move between them any time.</li>
+            {pattern.notes.map((n) => (
+              <li key={n}>• {n}</li>
+            ))}
             <li>• The question palette shows Answered, Not answered, Marked for review and Not visited.</li>
             <li>• Use <b className="text-foreground">Mark for review</b> to flag a question and come back later.</li>
             <li>• The paper submits automatically when the timer hits 00:00.</li>
             <li>• Full solutions, shortcuts and traps unlock right after you submit.</li>
           </ul>
           <div className="mt-5 grid gap-2 sm:grid-cols-2">
-            {sections.map((s) => (
-              <div key={s} className="rounded-2xl bg-secondary/60 p-4">
-                <p className="font-display text-lg font-extrabold">{s === "QA" ? "Quantitative Ability" : "Verbal Ability & RC"}</p>
-                <p className="text-sm text-muted-foreground">{bySection[s]?.length ?? 0} questions</p>
+            {groups.map((g) => (
+              <div key={g.key} className="rounded-2xl bg-secondary/60 p-4">
+                <p className="font-display text-lg font-extrabold">{g.label}</p>
+                <p className="text-sm text-muted-foreground">{g.questions.length} questions</p>
               </div>
             ))}
           </div>
@@ -154,26 +197,31 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
 
   /* ---------------- Result + solutions ---------------- */
   if (submitted) {
-    const pct = questions.length ? Math.round((score / questions.length) * 100) : 0;
+    const tried = questions.filter((q) => attempted(q)).length;
+    const pct = tried ? Math.round((score / tried) * 100) : 0;
     return (
       <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
         <div className="overflow-hidden rounded-3xl bg-aurora p-7 text-center text-primary-foreground shadow-pop animate-pop">
           <Mascot size={76} mood={pct >= 60 ? "happy" : "oops"} float className="mx-auto" />
           <h2 className="mt-3 font-display text-3xl font-extrabold">
-            {score}/{questions.length} · {pct}%
+            {marks}/{maxMarks} marks
           </h2>
           <p className="mt-1 text-sm opacity-90">
-            Finished in {fmt(seconds)} · {paper.title}
+            {score} correct · {wrongMcq + wrongTita} wrong · {pct}% accuracy on attempts · {fmt(seconds)}
+          </p>
+          <p className="mt-1 text-xs opacity-80">
+            Marking: +{pattern.correct} correct, −{pattern.negative} wrong MCQ
+            {pattern.negativeTita === 0 ? ", no negative on short answers" : ""}
           </p>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          {sections.map((s) => {
-            const qs = bySection[s] ?? [];
-            const sc = qs.filter((q) => answers[q.id] === q.correct_index).length;
+          {groups.map((g) => {
+            const qs = g.questions;
+            const sc = qs.filter((q) => isCorrect(q)).length;
             return (
-              <div key={s} className="rounded-3xl border border-border/70 bg-card p-5 shadow-soft">
-                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{s}</p>
+              <div key={g.key} className="rounded-3xl border border-border/70 bg-card p-5 shadow-soft">
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{g.label}</p>
                 <p className="font-display text-2xl font-extrabold">
                   {sc}/{qs.length}
                 </p>
@@ -185,7 +233,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
         <h3 className="font-display text-xl font-extrabold">Full solutions</h3>
         {questions.map((q, i) => {
           const picked = answers[q.id];
-          const right = picked === q.correct_index;
+          const right = isCorrect(q);
           return (
             <div key={q.id} className="rounded-3xl border border-border/70 bg-card p-5 shadow-soft">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
@@ -193,6 +241,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
                   Q{i + 1}
                 </span>
                 {q.section} {q.topic ? `· ${q.topic}` : ""}
+                {q.qtype === "tita" ? "· Short answer" : ""}
               </div>
               {q.passage && (
                 <p className="mt-3 whitespace-pre-line rounded-2xl bg-secondary/60 p-3 text-sm leading-relaxed">
@@ -200,8 +249,23 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
                 </p>
               )}
               <p className="mt-3 whitespace-pre-line font-medium">{pretty(q.prompt)}</p>
+              {q.qtype === "tita" ? (
+                <div className="mt-3 grid gap-2 text-sm">
+                  <div className="rounded-2xl border border-success/50 bg-success/10 px-3 py-2">
+                    Correct answer: <b>{pretty(q.answer_text ?? "")}</b>
+                  </div>
+                  <div
+                    className={cn(
+                      "rounded-2xl border px-3 py-2",
+                      right ? "border-success/50 bg-success/10" : "border-destructive/50 bg-destructive/10",
+                    )}
+                  >
+                    You typed: <b>{typed[q.id]?.trim() || "—"}</b>
+                  </div>
+                </div>
+              ) : (
               <div className="mt-3 grid gap-2">
-                {q.options.map((opt, oi) => (
+                {(q.options ?? []).map((opt, oi) => (
                   <div
                     key={oi}
                     className={cn(
@@ -221,6 +285,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
                   </div>
                 ))}
               </div>
+              )}
               <p className="mt-3 whitespace-pre-line text-sm leading-relaxed">{pretty(q.solution)}</p>
               {q.trick && (
                 <p className="mt-2 flex gap-2 rounded-2xl bg-accent/15 p-3 text-sm">
@@ -249,7 +314,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
   }
 
   /* ---------------- Live exam ---------------- */
-  const answeredCount = list.filter((q) => answers[q.id] !== undefined).length;
+  const answeredCount = list.filter((q) => attempted(q)).length;
 
   return (
     <div className="min-h-dvh bg-muted/40">
@@ -273,19 +338,19 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
           </Button>
         </div>
         <div className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 pb-2">
-          {sections.map((s, i) => (
+          {groups.map((g, i) => (
             <button
-              key={s}
+              key={g.key}
               onClick={() => {
                 setSectionIdx(i);
                 setIndex(0);
               }}
               className={cn(
-                "rounded-t-xl px-4 py-2 text-sm font-bold transition-colors",
+                "shrink-0 rounded-t-xl px-4 py-2 text-sm font-bold transition-colors",
                 i === sectionIdx ? "bg-aurora text-primary-foreground shadow-lift" : "bg-secondary text-muted-foreground",
               )}
             >
-              {s === "QA" ? "Quantitative Ability" : "Verbal Ability & RC"}
+              {g.label}
             </button>
           ))}
         </div>
@@ -299,6 +364,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
                 <p className="text-xs font-bold uppercase tracking-wide text-primary">
                   Question {index + 1} of {list.length}
                   {current.topic ? ` · ${current.topic}` : ""}
+                  {current.qtype === "tita" ? " · Short answer (no negative marking)" : ""}
                 </p>
                 <button
                   onClick={() => setMarked((m) => ({ ...m, [current.id]: !m[current.id] }))}
@@ -321,8 +387,26 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
                 {pretty(current.prompt)}
               </p>
 
+              {current.qtype === "tita" ? (
+                <div className="mt-4">
+                  <label className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    Type your answer
+                  </label>
+                  <input
+                    inputMode="decimal"
+                    autoComplete="off"
+                    value={typed[current.id] ?? ""}
+                    onChange={(e) => setTyped((t) => ({ ...t, [current.id]: e.target.value }))}
+                    placeholder="e.g. 48 or 12.5 or 3/4"
+                    className="mt-2 w-full rounded-2xl border-2 border-border bg-background p-3 text-lg font-semibold tabular-nums outline-none focus:border-primary"
+                  />
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Numbers only — no units, no words. There is no penalty for a wrong short answer.
+                  </p>
+                </div>
+              ) : (
               <div className="mt-4 grid gap-2.5">
-                {current.options.map((opt, oi) => (
+                {(current.options ?? []).map((opt, oi) => (
                   <button
                     key={oi}
                     onClick={() => setAnswers((a) => ({ ...a, [current.id]: oi }))}
@@ -338,6 +422,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
                   </button>
                 ))}
               </div>
+              )}
 
               <div className="mt-5 flex flex-wrap gap-2">
                 <Button variant="outline" disabled={index === 0} onClick={() => go(index - 1)}>
@@ -346,11 +431,13 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
                 <Button
                   variant="outline"
                   onClick={() =>
-                    setAnswers((a) => {
-                      const next = { ...a };
-                      delete next[current.id];
-                      return next;
-                    })
+                    current.qtype === "tita"
+                      ? setTyped((t) => ({ ...t, [current.id]: "" }))
+                      : setAnswers((a) => {
+                          const next = { ...a };
+                          delete next[current.id];
+                          return next;
+                        })
                   }
                 >
                   Clear response
@@ -422,8 +509,9 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
             <Mascot size={56} mood="thinking" />
             <h3 className="mt-2 font-display text-xl font-extrabold">Submit the paper?</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              {Object.keys(answers).length}/{questions.length} answered ·{" "}
-              {questions.length - Object.keys(answers).length} left · {fmt(left)} still on the clock.
+              {questions.filter((q) => attempted(q)).length}/{questions.length} answered ·{" "}
+              {questions.length - questions.filter((q) => attempted(q)).length} left · {fmt(left)} still on
+              the clock.
             </p>
             <div className="mt-5 flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setConfirming(false)}>
