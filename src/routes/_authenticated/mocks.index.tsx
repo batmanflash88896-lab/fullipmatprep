@@ -121,7 +121,10 @@ function MocksPage() {
                   {p.exam} {p.year}
                 </h3>
                 <p className="text-xs font-semibold text-muted-foreground">
-                  Full length · QA + VARC
+                  Full length ·{" "}
+                  {getPattern(p.pattern_key)
+                    .sections.map((s) => `${s.short} ${s.count}`)
+                    .join(" + ")}
                 </p>
                 <p className="mt-1 flex items-center gap-3 text-xs font-semibold text-muted-foreground">
                   <span className="inline-flex items-center gap-1">
@@ -129,6 +132,9 @@ function MocksPage() {
                   </span>
                   <span className="inline-flex items-center gap-1">
                     <Clock className="h-3.5 w-3.5" /> {p.duration_min} min
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    +{getPattern(p.pattern_key).correct} / −{getPattern(p.pattern_key).negative}
                   </span>
                 </p>
                 <p className="mt-3 text-sm font-semibold text-primary group-hover:underline">
