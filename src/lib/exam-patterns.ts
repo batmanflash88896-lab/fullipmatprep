@@ -33,7 +33,7 @@ const VARC_BRIEF =
 const LR_BRIEF =
   "arrangements, blood relations, coding-decoding, syllogisms, series, direction sense, puzzles, data sufficiency and logical data interpretation sets";
 
-export const EXAM_PATTERNS: Record<string, ExamPattern> = {
+const PATTERNS = {
   indore: {
     key: "indore",
     label: "IPMAT Indore pattern",
@@ -173,14 +173,18 @@ export const TOPIC_PATTERN: ExamPattern = {
   notes: ["Short topic test with IPMAT-level marking: +4 correct, −1 wrong."],
 };
 
+} satisfies Record<string, ExamPattern>;
+
+export const EXAM_PATTERNS: Record<string, ExamPattern> = PATTERNS;
+
 export function getPattern(key: string | null | undefined): ExamPattern {
-  return (key && EXAM_PATTERNS[key]) || TOPIC_PATTERN;
+  return (key ? EXAM_PATTERNS[key] : undefined) ?? TOPIC_PATTERN;
 }
 
 export function patternForExam(exam: string): ExamPattern {
-  if (exam === "IPMAT Rohtak") return EXAM_PATTERNS.rohtak;
-  if (exam === "IPMAT Indore" || exam === "IPM Ranchi") return EXAM_PATTERNS.indore;
-  return EXAM_PATTERNS.jipmat;
+  if (exam === "IPMAT Rohtak") return PATTERNS.rohtak;
+  if (exam === "IPMAT Indore" || exam === "IPM Ranchi") return PATTERNS.indore;
+  return PATTERNS.jipmat;
 }
 
 export const SECTION_LABEL: Record<SectionCode, string> = {
