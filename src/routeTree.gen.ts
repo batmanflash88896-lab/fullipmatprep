@@ -24,6 +24,7 @@ import { Route as AuthenticatedLearnSlugRouteImport } from './routes/_authentica
 import { Route as AuthenticatedMocksIndexRouteImport } from './routes/_authenticated/mocks.index'
 import { Route as AuthenticatedMocksPaperIdRouteImport } from './routes/_authenticated/mocks.$paperId'
 import { Route as AuthenticatedPracticeSectionRouteImport } from './routes/_authenticated/practice.$section'
+import { Route as AuthenticatedWatchSlugRouteImport } from './routes/_authenticated/watch.$slug'
 import { Route as AuthenticatedMocksTopicSlugRouteImport } from './routes/_authenticated/mocks.topic.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -103,6 +104,11 @@ const AuthenticatedPracticeSectionRoute =
     path: '/practice/$section',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedWatchSlugRoute = AuthenticatedWatchSlugRouteImport.update({
+  id: '/watch/$slug',
+  path: '/watch/$slug',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMocksTopicSlugRoute =
   AuthenticatedMocksTopicSlugRouteImport.update({
     id: '/mocks/topic/$slug',
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/learn/$slug': typeof AuthenticatedLearnSlugRoute
   '/mocks/$paperId': typeof AuthenticatedMocksPaperIdRoute
   '/practice/$section': typeof AuthenticatedPracticeSectionRoute
+  '/watch/$slug': typeof AuthenticatedWatchSlugRoute
   '/doubt/': typeof AuthenticatedDoubtIndexRoute
   '/learn/': typeof AuthenticatedLearnIndexRoute
   '/mocks/': typeof AuthenticatedMocksIndexRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/learn/$slug': typeof AuthenticatedLearnSlugRoute
   '/mocks/$paperId': typeof AuthenticatedMocksPaperIdRoute
   '/practice/$section': typeof AuthenticatedPracticeSectionRoute
+  '/watch/$slug': typeof AuthenticatedWatchSlugRoute
   '/doubt': typeof AuthenticatedDoubtIndexRoute
   '/learn': typeof AuthenticatedLearnIndexRoute
   '/mocks': typeof AuthenticatedMocksIndexRoute
@@ -157,6 +165,7 @@ export interface FileRoutesById {
   '/_authenticated/learn/$slug': typeof AuthenticatedLearnSlugRoute
   '/_authenticated/mocks/$paperId': typeof AuthenticatedMocksPaperIdRoute
   '/_authenticated/practice/$section': typeof AuthenticatedPracticeSectionRoute
+  '/_authenticated/watch/$slug': typeof AuthenticatedWatchSlugRoute
   '/_authenticated/doubt/': typeof AuthenticatedDoubtIndexRoute
   '/_authenticated/learn/': typeof AuthenticatedLearnIndexRoute
   '/_authenticated/mocks/': typeof AuthenticatedMocksIndexRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
     | '/learn/$slug'
     | '/mocks/$paperId'
     | '/practice/$section'
+    | '/watch/$slug'
     | '/doubt/'
     | '/learn/'
     | '/mocks/'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/learn/$slug'
     | '/mocks/$paperId'
     | '/practice/$section'
+    | '/watch/$slug'
     | '/doubt'
     | '/learn'
     | '/mocks'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/_authenticated/learn/$slug'
     | '/_authenticated/mocks/$paperId'
     | '/_authenticated/practice/$section'
+    | '/_authenticated/watch/$slug'
     | '/_authenticated/doubt/'
     | '/_authenticated/learn/'
     | '/_authenticated/mocks/'
@@ -330,6 +342,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPracticeSectionRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/watch/$slug': {
+      id: '/_authenticated/watch/$slug'
+      path: '/watch/$slug'
+      fullPath: '/watch/$slug'
+      preLoaderRoute: typeof AuthenticatedWatchSlugRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/mocks/topic/$slug': {
       id: '/_authenticated/mocks/topic/$slug'
       path: '/mocks/topic/$slug'
@@ -361,6 +380,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedLearnSlugRoute: typeof AuthenticatedLearnSlugRoute
   AuthenticatedMocksPaperIdRoute: typeof AuthenticatedMocksPaperIdRoute
   AuthenticatedPracticeSectionRoute: typeof AuthenticatedPracticeSectionRoute
+  AuthenticatedWatchSlugRoute: typeof AuthenticatedWatchSlugRoute
   AuthenticatedLearnIndexRoute: typeof AuthenticatedLearnIndexRoute
   AuthenticatedMocksIndexRoute: typeof AuthenticatedMocksIndexRoute
   AuthenticatedMocksTopicSlugRoute: typeof AuthenticatedMocksTopicSlugRoute
@@ -374,6 +394,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedLearnSlugRoute: AuthenticatedLearnSlugRoute,
   AuthenticatedMocksPaperIdRoute: AuthenticatedMocksPaperIdRoute,
   AuthenticatedPracticeSectionRoute: AuthenticatedPracticeSectionRoute,
+  AuthenticatedWatchSlugRoute: AuthenticatedWatchSlugRoute,
   AuthenticatedLearnIndexRoute: AuthenticatedLearnIndexRoute,
   AuthenticatedMocksIndexRoute: AuthenticatedMocksIndexRoute,
   AuthenticatedMocksTopicSlugRoute: AuthenticatedMocksTopicSlugRoute,
@@ -391,13 +412,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
