@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { QA_CHAPTERS, VARC_CHAPTERS, TOTAL_TOPICS, type Chapter } from "@/lib/syllabus";
 import { getTopicProgress } from "@/lib/learn.functions";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, ChevronDown, Circle, Search, Sparkles } from "lucide-react";
+import { CheckCircle2, ChevronDown, Circle, PlayCircle, Search, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/learn/")({
   head: () => ({
@@ -145,10 +145,11 @@ function ChapterCard({
             const status = statusMap.get(topic.slug);
             return (
               <li key={topic.slug}>
+                <div className="flex items-stretch gap-2">
                 <Link
                   to="/learn/$slug"
                   params={{ slug: topic.slug }}
-                  className="flex items-center gap-2.5 rounded-2xl border border-transparent bg-background p-3 text-sm transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-soft"
+                  className="flex flex-1 items-center gap-2.5 rounded-2xl border border-transparent bg-background p-3 text-sm transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-soft"
                 >
                   {status === "mastered" ? (
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
@@ -163,6 +164,16 @@ function ChapterCard({
                   <span className="flex-1 font-medium">{topic.name}</span>
                   <Sparkles className="h-3.5 w-3.5 text-primary" />
                 </Link>
+                <Link
+                  to="/watch/$slug"
+                  params={{ slug: topic.slug }}
+                  title="Watch the video class"
+                  aria-label={`Watch the video class on ${topic.name}`}
+                  className="flex w-11 shrink-0 items-center justify-center rounded-2xl bg-aurora text-primary-foreground shadow-lift transition-transform hover:-translate-y-0.5"
+                >
+                  <PlayCircle className="h-5 w-5" />
+                </Link>
+                </div>
               </li>
             );
           })}

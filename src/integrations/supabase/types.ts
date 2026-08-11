@@ -418,6 +418,39 @@ export type Database = {
         }
         Relationships: []
       }
+      video_lessons: {
+        Row: {
+          chapter_name: string
+          created_at: string
+          id: string
+          script: Json
+          section: string
+          title: string
+          topic_name: string
+          topic_slug: string
+        }
+        Insert: {
+          chapter_name?: string
+          created_at?: string
+          id?: string
+          script?: Json
+          section?: string
+          title?: string
+          topic_name?: string
+          topic_slug: string
+        }
+        Update: {
+          chapter_name?: string
+          created_at?: string
+          id?: string
+          script?: Json
+          section?: string
+          title?: string
+          topic_name?: string
+          topic_slug?: string
+        }
+        Relationships: []
+      }
       vocab_progress: {
         Row: {
           id: string
