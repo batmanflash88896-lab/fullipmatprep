@@ -154,14 +154,21 @@ function TopicClass() {
         <ArrowLeft className="h-4 w-4" /> All chapters
       </Link>
 
-      <header className="mb-4">
-        <p className="text-xs font-bold uppercase tracking-wide text-primary">
-          {meta?.chapter.section === "VARC" ? "VARC" : "Quantitative Aptitude"} ·{" "}
-          {meta?.chapter.name}
-        </p>
-        <h1 className="font-display text-3xl font-extrabold tracking-tight">
-          {meta?.topic.name ?? "Topic"}
-        </h1>
+      <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wide text-primary">
+            {meta?.chapter.section === "VARC" ? "VARC" : "Quantitative Aptitude"} ·{" "}
+            {meta?.chapter.name}
+          </p>
+          <h1 className="font-display text-3xl font-extrabold tracking-tight">
+            {meta?.topic.name ?? "Topic"}
+          </h1>
+        </div>
+        <Button asChild className="bg-aurora text-primary-foreground shadow-lift">
+          <Link to="/watch/$slug" params={{ slug }}>
+            🎬 Watch video class
+          </Link>
+        </Button>
       </header>
 
       {isLoading && <ClassLoading topic={meta?.topic.name ?? ""} />}
