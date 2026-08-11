@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { QA_CHAPTERS, VARC_CHAPTERS, TOTAL_TOPICS, type Chapter } from "@/lib/syllabus";
 import { getTopicProgress } from "@/lib/learn.functions";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, ChevronDown, Circle, Search, Sparkles } from "lucide-react";
+import { CheckCircle2, ChevronDown, Circle, PlayCircle, Search, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/learn/")({
   head: () => ({
