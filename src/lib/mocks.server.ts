@@ -92,9 +92,13 @@ async function generateSection(
     left -= CHUNK;
   }
 
-  const results = await Promise.all(
-    chunks.map((n, ci) =>
-      run(
+  const results: GeneratedQuestion[][] = [];
+  for (const [ci, n] of chunks.entries()) {
+    let part: GeneratedQuestion[] = [];
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 2 && part.length < n; attempt += 1) {
+      try {
+        part = await run(
         SETTER,
         `Create part ${ci + 1} of ${chunks.length} of the "${section.label}" section of a FULL LENGTH practice paper mirroring the ${exam} ${year} paper (${pattern.label}: ${pattern.durationMin} minutes, +${pattern.correct} for correct, −${pattern.negative} for a wrong MCQ).
 Exactly ${n} questions. Cover ${section.brief}.
@@ -104,11 +108,20 @@ Do not repeat question ideas across parts; part ${ci + 1} must feel distinct.${
             ? " Include at least one reading passage with 4 questions on it, then non-RC verbal questions."
             : ""
         }
-${section.qtype === "tita" ? SHAPE_TITA : SHAPE}`,
+${section.qtype === "tita" ? SHAPE_TITA : SHAPE}
+This response is accepted only when the questions array contains exactly ${n} complete questions. Count carefully before replying.`,
         section.qtype,
-      ),
-    ),
-  );
+        );
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    if (part.length < n) {
+      if (lastError instanceof Error) throw lastError;
+      throw new Error(`Sunny generated only ${part.length} of ${n} questions for ${section.label}. Please retry.`);
+    }
+    results.push(part.slice(0, n));
+  }
 
   return results.flat().slice(0, section.count).map((q) => ({
     ...q,
@@ -121,7 +134,12 @@ export async function generatePyqPaper(exam: string, year: number, pattern: Exam
   const sections = await Promise.all(
     pattern.sections.map((s) => generateSection(exam, year, pattern, s)),
   );
-  return sections.flat();
+  const paper = sections.flat();
+  const expected = pattern.sections.reduce((sum, section) => sum + section.count, 0);
+  if (paper.length !== expected) {
+    throw new Error(`The paper is incomplete (${paper.length}/${expected} questions). Please retry.`);
+  }
+  return paper;
 }
 
 export function generateTopicPaper(
