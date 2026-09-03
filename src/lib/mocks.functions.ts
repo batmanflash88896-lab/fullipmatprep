@@ -59,20 +59,22 @@ export const getMockPaper = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { paperId: string }) => input)
   .handler(async ({ data, context }) => {
-    const { data: paper } = await context.supabase
+    const { data: paper, error: paperError } = await context.supabase
       .from("mock_papers")
       .select("*")
       .eq("id", data.paperId)
       .maybeSingle();
+    if (paperError) throw new Error(`Could not load this mock: ${paperError.message}`);
     if (!paper) throw new Error("Mock not found");
 
-    const { data: existing } = await context.supabase
+    const { data: existing, error: questionsError } = await context.supabase
       .from("mock_questions")
       .select("*")
       .eq("paper_id", data.paperId)
       .order("position");
+    if (questionsError) throw new Error(`Could not load mock questions: ${questionsError.message}`);
 
-    if (existing && existing.length > 0) {
+    if (existing && existing.length === paper.question_count) {
       return { paper: paper as unknown as MockPaper, questions: existing as unknown as MockQuestion[] };
     }
 
@@ -101,6 +103,13 @@ export const getMockPaper = createServerFn({ method: "POST" })
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (existing && existing.length > 0) {
+      const { error: clearError } = await supabaseAdmin
+        .from("mock_questions")
+        .delete()
+        .eq("paper_id", paper.id);
+      if (clearError) throw new Error(`Could not repair the incomplete paper: ${clearError.message}`);
+    }
     const rows = generated.map((q, i) => ({
       paper_id: paper.id,
       position: i,
@@ -138,12 +147,13 @@ export const ensureTopicMock = createServerFn({ method: "POST" })
     const found = findTopic(data.slug);
     if (!found) throw new Error("Unknown topic");
 
-    const { data: existing } = await context.supabase
+    const { data: existing, error: existingError } = await context.supabase
       .from("mock_papers")
       .select("id")
       .eq("kind", "topic")
       .eq("topic_slug", data.slug)
       .maybeSingle();
+    if (existingError) throw new Error(existingError.message);
     if (existing) return { paperId: existing.id as string };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -159,6 +169,7 @@ export const ensureTopicMock = createServerFn({ method: "POST" })
         topic_name: found.topic.name,
         duration_min: 15,
         question_count: 10,
+        pattern_key: "topic",
       })
       .select("id")
       .single();

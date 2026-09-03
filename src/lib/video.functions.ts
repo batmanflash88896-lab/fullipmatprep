@@ -12,11 +12,12 @@ export const getVideoLesson = createServerFn({ method: "POST" })
     const found = findTopic(data.slug);
     if (!found) throw new Error("Unknown topic");
 
-    const { data: cached } = await context.supabase
+    const { data: cached, error: cacheError } = await context.supabase
       .from("video_lessons")
       .select("script, title")
       .eq("topic_slug", data.slug)
       .maybeSingle();
+    if (cacheError) throw new Error(`Could not load this video class: ${cacheError.message}`);
     if (cached?.script && (cached.script as unknown as VideoScript).scenes?.length) {
       return {
         script: cached.script as unknown as VideoScript,
@@ -25,11 +26,12 @@ export const getVideoLesson = createServerFn({ method: "POST" })
       };
     }
 
-    const { data: profile } = await context.supabase
+    const { data: profile, error: profileError } = await context.supabase
       .from("profiles")
       .select("target_college")
       .eq("id", context.userId)
       .maybeSingle();
+    if (profileError) throw new Error(`Could not load your study profile: ${profileError.message}`);
 
     const { generateVideoScript } = await import("@/lib/video.server");
     const script = await generateVideoScript(
@@ -40,7 +42,7 @@ export const getVideoLesson = createServerFn({ method: "POST" })
     );
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.from("video_lessons").upsert(
+    const { error: saveError } = await supabaseAdmin.from("video_lessons").upsert(
       {
         topic_slug: data.slug,
         chapter_name: found.chapter.name,
@@ -51,6 +53,7 @@ export const getVideoLesson = createServerFn({ method: "POST" })
       },
       { onConflict: "topic_slug" },
     );
+    if (saveError) throw new Error(`The video class was created but could not be saved: ${saveError.message}`);
 
     return { script, topic: found.topic.name, chapter: found.chapter.name };
   });
@@ -63,10 +66,15 @@ export const getSceneAudio = createServerFn({ method: "POST" })
     const path = `${data.slug}/${data.index}.mp3`;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const signExisting = await supabaseAdmin.storage
+    const fileName = `${data.index}.mp3`;
+    const existing = await supabaseAdmin.storage
       .from("lesson-audio")
-      .createSignedUrl(path, 60 * 60);
-    if (signExisting.data?.signedUrl) return { url: signExisting.data.signedUrl };
+      .list(data.slug, { search: fileName, limit: 1 });
+    if (existing.error) throw new Error(existing.error.message);
+    if (existing.data?.some((file) => file.name === fileName)) {
+      const signed = await supabaseAdmin.storage.from("lesson-audio").createSignedUrl(path, 60 * 60);
+      if (signed.data?.signedUrl) return { url: signed.data.signedUrl };
+    }
 
     const { synthesizeScene } = await import("@/lib/video.server");
     const bytes = await synthesizeScene(data.narration);

@@ -34,11 +34,12 @@ export const getLesson = createServerFn({ method: "POST" })
     const { chapter, topic } = found;
 
     if (!data.regenerate) {
-      const { data: cached } = await context.supabase
+      const { data: cached, error: cacheError } = await context.supabase
         .from("lessons")
         .select("content")
         .eq("topic_slug", data.slug)
         .maybeSingle();
+      if (cacheError) throw new Error(`Could not load this class: ${cacheError.message}`);
       const content = cached?.content as unknown as Lesson | null;
       if (content && Array.isArray(content.beats) && content.beats.length > 0) {
         return {
@@ -50,11 +51,12 @@ export const getLesson = createServerFn({ method: "POST" })
       }
     }
 
-    const { data: profile } = await context.supabase
+    const { data: profile, error: profileError } = await context.supabase
       .from("profiles")
       .select("target_college")
       .eq("id", context.userId)
       .maybeSingle();
+    if (profileError) throw new Error(`Could not load your study profile: ${profileError.message}`);
     const { generateLesson } = await import("@/lib/learn.server");
     const lesson = await generateLesson(
       chapter.name,
@@ -62,7 +64,8 @@ export const getLesson = createServerFn({ method: "POST" })
       chapter.section,
       profile?.target_college ?? null,
     );
-    await context.supabase.from("lessons").upsert(
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error: saveError } = await supabaseAdmin.from("lessons").upsert(
       {
         topic_slug: data.slug,
         section: chapter.section,
@@ -72,6 +75,7 @@ export const getLesson = createServerFn({ method: "POST" })
       },
       { onConflict: "topic_slug" },
     );
+    if (saveError) throw new Error(`The class was created but could not be saved: ${saveError.message}`);
 
     return { chapter: chapter.name, topic: topic.name, section: chapter.section, lesson };
   });
@@ -79,10 +83,11 @@ export const getLesson = createServerFn({ method: "POST" })
 export const getTopicProgress = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data } = await context.supabase
+    const { data, error } = await context.supabase
       .from("topic_progress")
       .select("topic_slug, status, practice_correct, practice_total")
       .eq("user_id", context.userId);
+    if (error) throw new Error(error.message);
     return data ?? [];
   });
 
