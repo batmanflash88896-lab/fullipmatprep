@@ -28,7 +28,11 @@ export function extractQuestions(text: string, qtype: "mcq" | "tita" = "mcq"): G
     q && typeof q.prompt === "string" && q.prompt.trim().length > 0
       ? qtype === "tita"
         ? typeof q.answer_text === "string" && q.answer_text.trim().length > 0
-        : Array.isArray(q.options) && q.options.length >= 2
+        : Array.isArray(q.options) &&
+          q.options.length >= 2 &&
+          Number.isInteger(q.correct_index) &&
+          (q.correct_index ?? -1) >= 0 &&
+          (q.correct_index ?? -1) < q.options.length
       : false,
   );
   if (questions.length === 0) throw new Error("Could not build this mock. Try again.");

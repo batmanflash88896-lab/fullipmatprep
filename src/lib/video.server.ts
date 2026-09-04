@@ -91,7 +91,16 @@ Hard rules:
     script.scenes = (script.scenes ?? []).filter((s) => s && s.narration);
     if (script.scenes.length === 0) throw new Error("empty");
     script.checkpoints = (script.checkpoints ?? []).filter(
-      (c) => c && Array.isArray(c.options) && c.options.length >= 2,
+      (c) =>
+        c &&
+        Number.isInteger(c.after) &&
+        c.after >= 0 &&
+        c.after < script.scenes.length &&
+        Array.isArray(c.options) &&
+        c.options.length >= 2 &&
+        Number.isInteger(c.correct_index) &&
+        c.correct_index >= 0 &&
+        c.correct_index < c.options.length,
     );
     script.recap = script.recap ?? [];
     return script;
