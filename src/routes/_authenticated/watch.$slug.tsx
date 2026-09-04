@@ -98,7 +98,12 @@ function WatchPage() {
         el.src = url;
         return el.play();
       })
-      .catch(() => !cancelled && setAudioBroken(true))
+      .catch(() => {
+        if (!cancelled) {
+          setAudioBroken(true);
+          setPlaying(false);
+        }
+      })
       .finally(() => !cancelled && setLoadingAudio(false));
     void loadUrl(i + 1).catch(() => {});
     return () => {
