@@ -36,7 +36,11 @@ function extract<T>(text: string): T {
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
   if (start === -1 || end === -1) throw new Error("Sunny could not build this video. Try again.");
-  return JSON.parse(raw.slice(start, end + 1)) as T;
+  try {
+    return JSON.parse(raw.slice(start, end + 1)) as T;
+  } catch {
+    throw new Error("Sunny could not format this video class. Try again.");
+  }
 }
 
 export async function generateVideoScript(
@@ -55,7 +59,7 @@ export async function generateVideoScript(
   const result = streamText({
     model: gateway(MODEL),
     temperature: 0.6,
-    system: `You are Sunny, India's most loved IPMAT teacher, recording a video class. You speak Hinglish (English sentences with natural Hindi words like "dekho", "bilkul", "ekdum", "samajh gaye?"), you are high energy, funny, and you crack one small joke tied to the question itself every few scenes. You teach ONE subtopic deeply — never a summary of the whole chapter. Plain text only, no markdown, no LaTeX. ${NO_LATEX_RULE} Reply with ONLY a JSON object.`,
+    system: `You are Sunny, India's most loved IPMAT teacher, recording a video class. You speak Hinglish with an ORIGINAL energetic Indian comic-mentor personality: quick observations, playful exam jokes, sharp timing, warm encouragement. Never imitate or mention a real comedian. You teach ONE subtopic deeply — never a summary of the whole chapter. Every scene must visibly DO something on the board: derive, calculate, compare, underline a trap, or solve a question. Plain text only, no markdown, no LaTeX. ${NO_LATEX_RULE} Reply with ONLY a JSON object.`,
     prompt: `Record a full video class on exactly ONE subtopic: IPMAT ${section} > Chapter "${chapter}" > Subtopic "${topic}".${
       college ? ` The student targets ${college}; use that paper's difficulty and past-year questions.` : ""
     }
@@ -66,7 +70,7 @@ Return JSON:
   "hook": "1-2 spoken lines that grab attention in the first 5 seconds",
   "scenes": [
     {"heading":"short on-screen heading (max 6 words)",
-     "bullets":["max 8 words each","3 to 4 of them","what appears on the board"],
+     "bullets":["3 to 5 short board-writing steps","each line advances the working","never generic summary bullets"],
      "highlight":"the one formula, ratio or number to flash big (or null)",
      "narration":"what Sunny SAYS for this scene: 45-80 spoken words of Hinglish, warm, energetic, with a concrete worked number"}
   ],
@@ -77,7 +81,7 @@ Return JSON:
 }
 
 Hard rules:
-- 10 to 14 scenes, in this teaching order: hook and why it matters, the core idea from zero, the standard method, at least 2 fully worked examples, 2 shortcut/trick scenes, 1 common-mistake scene, 1 exam-level previous-year style question worked out, then the recap scene.
+- 10 to 14 scenes, in this teaching order: hook and why it matters, the core idea from zero, the standard method, at least 2 fully worked examples shown LINE BY LINE on the board, 2 shortcut/trick scenes, 1 common-mistake scene, 1 exam-level previous-year style question worked out, then the recap scene.
 - Start from absolute basics of THIS subtopic and build up. Example style for Percentages: first 1/2 = 50%, 1/4 = 25%, 1/8 = 12.5%, then the fraction table, then applications.
 - Mention real IPMAT previous-year question patterns for this subtopic at least twice.
 - 4 to 6 checkpoints spread across the class, each "after" a different scene index (0-based), each testing only what was already taught.
@@ -110,7 +114,7 @@ Hard rules:
 }
 
 const VOICE_STYLE =
-  "Speak Hinglish like a young, super energetic Indian exam coach on stage. Fast but crystal clear, warm and playful, smile in the voice, punch the key numbers, tiny pause before a punchline or a twist.";
+  "Use an original Hinglish comic-mentor delivery. Young, super energetic Indian exam coach on stage; fast but crystal clear, warm and playful. Smile in the voice, punch key numbers, use a tiny pause before a punchline or twist. Do not imitate any real person.";
 
 /** Narrates one scene and returns the MP3 bytes. */
 export async function synthesizeScene(narration: string): Promise<ArrayBuffer> {

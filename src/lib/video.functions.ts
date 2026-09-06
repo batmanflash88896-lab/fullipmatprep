@@ -63,6 +63,10 @@ export const getSceneAudio = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { slug: string; index: number; narration: string }) => input)
   .handler(async ({ data }) => {
+    if (!findTopic(data.slug)) throw new Error("Unknown topic");
+    if (!Number.isInteger(data.index) || data.index < 0 || data.index > 30) throw new Error("Invalid scene");
+    const narration = data.narration.trim();
+    if (!narration || narration.length > 5000) throw new Error("Invalid narration");
     const path = `${data.slug}/${data.index}.mp3`;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -77,11 +81,11 @@ export const getSceneAudio = createServerFn({ method: "POST" })
     }
 
     const { synthesizeScene } = await import("@/lib/video.server");
-    const bytes = await synthesizeScene(data.narration);
+    const bytes = await synthesizeScene(narration);
     const { error } = await supabaseAdmin.storage
       .from("lesson-audio")
       .upload(path, bytes, { contentType: "audio/mpeg", upsert: true });
-    if (error && !/exists/i.test(error.message)) throw new Error(error.message);
+    if (error && !/exists/i.test(error.message)) throw new Error(`Could not save the voice track: ${error.message}`);
 
     const signed = await supabaseAdmin.storage.from("lesson-audio").createSignedUrl(path, 60 * 60);
     if (!signed.data?.signedUrl) throw new Error("Could not load the audio. Try again.");

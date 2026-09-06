@@ -47,7 +47,7 @@ function WatchPage() {
   const navigate = useNavigate();
   const found = findTopic(slug);
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["video-lesson", slug],
     queryFn: () => getVideoLesson({ data: { slug } }),
     staleTime: Infinity,
@@ -59,16 +59,18 @@ function WatchPage() {
   const [playing, setPlaying] = useState(false);
   const [loadingAudio, setLoadingAudio] = useState(false);
   const [audioBroken, setAudioBroken] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const [audioProgress, setAudioProgress] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [checkpointDone, setCheckpointDone] = useState<Record<number, boolean>>({});
+  const [checkpointOpen, setCheckpointOpen] = useState(false);
   const [finished, setFinished] = useState(false);
   const [building, setBuilding] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urlCache = useRef<Record<number, string>>({});
 
-  const checkpoint = data?.script.checkpoints.find(
-    (c) => c.after === i && !checkpointDone[i],
-  );
+  const pendingCheckpoint = data?.script.checkpoints.find((c) => c.after === i && !checkpointDone[i]);
+  const checkpoint = checkpointOpen ? pendingCheckpoint : undefined;
 
   const loadUrl = useCallback(
     async (index: number) => {
@@ -93,14 +95,16 @@ function WatchPage() {
       .then((url) => {
         if (cancelled || !url) return;
         setAudioBroken(false);
+        setAudioError(null);
         const el = audioRef.current;
         if (!el) return;
         el.src = url;
         return el.play();
       })
-      .catch(() => {
+      .catch((cause: unknown) => {
         if (!cancelled) {
           setAudioBroken(true);
+          setAudioError(cause instanceof Error ? cause.message : "Sunny's voice could not load.");
           setPlaying(false);
         }
       })
@@ -113,6 +117,9 @@ function WatchPage() {
   }, [i, playing, checkpoint, scenes.length]);
 
   function next() {
+    audioRef.current?.pause();
+    setAudioProgress(0);
+    setCheckpointOpen(false);
     setPicked(null);
     if (i < scenes.length - 1) setI(i + 1);
     else setFinished(true);
@@ -140,16 +147,18 @@ function WatchPage() {
         <div className="rounded-3xl border border-border/70 bg-card p-8 text-center shadow-soft">
           <Mascot size={72} mood={isError ? "oops" : "thinking"} float className="mx-auto" />
           <p className="mt-3 font-display text-lg font-extrabold">
-            {isError ? "Couldn't record this class 😅" : "Sunny is recording your class… 🎬"}
+            {isError ? "This class couldn't start" : "Sunny is preparing the board… 🎬"}
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
             {isError
-              ? "One more try and we're rolling."
+              ? error instanceof Error
+                ? error.message
+                : "The class could not be prepared right now."
               : `Writing the full video class on ${found?.topic.name ?? "this topic"} — board, examples, PYQs.`}
           </p>
           {isError && (
-            <Button className="mt-4 bg-sunrise text-primary-foreground" onClick={() => refetch()}>
-              <RefreshCw className="mr-1.5 h-4 w-4" /> Retry
+            <Button disabled={isFetching} className="mt-4 bg-sunrise text-primary-foreground" onClick={() => refetch()}>
+              <RefreshCw className={cn("mr-1.5 h-4 w-4", isFetching && "animate-spin")} /> Retry class
             </Button>
           )}
         </div>
@@ -183,11 +192,11 @@ function WatchPage() {
         </Button>
       </div>
 
-      {/* -------- the "video" stage -------- */}
-      <div className="mt-4 overflow-hidden rounded-3xl border border-border/70 bg-card shadow-pop">
-        <div className="relative aspect-video w-full bg-aurora p-5 text-primary-foreground sm:p-8">
+      <div className="mt-4 overflow-hidden rounded-2xl border border-border/70 bg-card shadow-pop">
+        <div className="relative aspect-video min-h-[320px] w-full overflow-hidden bg-ink p-4 text-ink-foreground sm:min-h-0 sm:p-7">
+          <div className="pointer-events-none absolute inset-0 board-grid opacity-30" />
           {checkpoint ? (
-            <div key={`cp-${i}`} className="flex h-full flex-col overflow-y-auto animate-pop">
+            <div key={`cp-${i}`} className="relative z-10 flex h-full flex-col overflow-y-auto animate-board-wipe">
               <p className="text-xs font-bold uppercase tracking-wide opacity-90">Quick check ✋</p>
               <p className="mt-1 whitespace-pre-line text-base font-bold sm:text-lg">
                 {pretty(checkpoint.prompt)}
@@ -202,7 +211,7 @@ function WatchPage() {
                       disabled={show}
                       onClick={() => setPicked(oi)}
                       className={cn(
-                        "flex items-center gap-2 rounded-2xl bg-primary-foreground/15 px-3 py-2 text-left text-sm font-medium backdrop-blur transition-colors",
+                        "flex items-center gap-2 rounded-lg bg-ink-foreground/10 px-3 py-2 text-left text-sm font-medium backdrop-blur transition-colors",
                         show && isRight && "bg-success/80",
                         show && !isRight && oi === picked && "bg-destructive/70",
                       )}
@@ -212,7 +221,7 @@ function WatchPage() {
                       ) : show && oi === picked ? (
                         <XCircle className="h-4 w-4" />
                       ) : (
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-foreground/25 text-[11px] font-bold">
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-ink-foreground/20 text-[11px] font-bold">
                           {String.fromCharCode(65 + oi)}
                         </span>
                       )}
@@ -223,18 +232,19 @@ function WatchPage() {
               </div>
               {picked !== null && (
                 <div className="mt-3 space-y-2 text-sm">
-                  <p className="whitespace-pre-line rounded-2xl bg-primary-foreground/15 p-3">
+                  <p className="whitespace-pre-line rounded-lg bg-ink-foreground/10 p-3">
                     {pretty(checkpoint.solution)}
                   </p>
                   {checkpoint.trick && (
-                    <p className="whitespace-pre-line rounded-2xl bg-primary-foreground/15 p-3">
+                    <p className="whitespace-pre-line rounded-lg bg-ink-foreground/10 p-3">
                       ⚡ {pretty(checkpoint.trick)}
                     </p>
                   )}
                   <Button
-                    className="bg-primary-foreground text-primary"
+                    className="bg-ink-foreground text-ink"
                     onClick={() => {
                       setCheckpointDone((d) => ({ ...d, [i]: true }));
+                      setCheckpointOpen(false);
                       setPicked(null);
                       setPlaying(true);
                       next();
@@ -246,38 +256,45 @@ function WatchPage() {
               )}
             </div>
           ) : (
-            <div key={i} className="flex h-full flex-col animate-slide-up">
-              <p className="text-xs font-bold uppercase tracking-wide opacity-90">
-                Scene {i + 1} of {scenes.length}
-              </p>
-              <h2 className="mt-1 font-display text-xl font-extrabold sm:text-3xl">
+            <div key={i} className="relative z-10 flex h-full flex-col">
+              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wide opacity-80">
+                <span>Live board · Scene {i + 1}/{scenes.length}</span>
+                <span>{playing ? "● Teaching" : "Paused"}</span>
+              </div>
+              <h2 className="mt-2 font-display text-xl font-extrabold animate-chalk-write sm:text-3xl">
                 {pretty(scene?.heading ?? "")}
               </h2>
               {scene?.highlight && (
-                <p className="mt-3 inline-block self-start rounded-2xl bg-primary-foreground/20 px-4 py-2 font-display text-lg font-extrabold tabular-nums backdrop-blur sm:text-2xl">
+                <p className="mt-3 inline-block self-start rounded-md border border-accent/60 bg-accent/15 px-4 py-2 font-display text-lg font-extrabold tabular-nums text-accent animate-board-pop sm:text-2xl">
                   {pretty(scene.highlight)}
                 </p>
               )}
-              <ul className="mt-3 space-y-1.5 overflow-y-auto text-sm leading-relaxed sm:text-base">
-                {(scene?.bullets ?? []).map((b, bi) => (
+              <ol className="mt-4 space-y-2 overflow-y-auto text-sm leading-relaxed sm:text-base">
+                {(scene?.bullets ?? []).map((b, bi, all) => {
+                  const visible = !playing || audioProgress >= bi / Math.max(1, all.length);
+                  return (
                   <li
                     key={bi}
-                    className="animate-slide-up"
-                    style={{ animationDelay: `${bi * 140}ms` }}
+                    className={cn(
+                      "flex items-start gap-2 transition-all duration-500",
+                      visible ? "translate-x-0 opacity-100" : "translate-x-4 opacity-0",
+                    )}
                   >
-                    • {pretty(b)}
+                    <span className="mt-0.5 font-mono text-accent">{bi + 1}.</span>
+                    <span className="border-b border-ink-foreground/15 pb-1">{pretty(b)}</span>
                   </li>
-                ))}
-              </ul>
+                  );
+                })}
+              </ol>
               <div className="mt-auto flex items-center gap-2 pt-3">
                 <Mascot size={44} mood={playing ? "cheer" : "idle"} float={playing} />
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-foreground/20 px-3 py-1 text-xs font-bold backdrop-blur">
+                <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-ink-foreground/10 px-3 py-1 text-xs font-bold backdrop-blur">
                   {loadingAudio ? (
                     <>
                       <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading Sunny's voice…
                     </>
                   ) : audioBroken ? (
-                    "Voice unavailable — read along 👇"
+                    <span className="truncate">Voice paused — {audioError ?? "tap retry"}</span>
                   ) : (
                     <>
                       <Volume2 className="h-3.5 w-3.5" /> Sunny is teaching
@@ -321,6 +338,20 @@ function WatchPage() {
               {playing ? <Pause className="mr-1.5 h-4 w-4" /> : <Play className="mr-1.5 h-4 w-4" />}
               {playing ? "Pause" : i === 0 ? "Play class" : "Resume"}
             </Button>
+            {audioBroken && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  delete urlCache.current[i];
+                  setAudioBroken(false);
+                  setAudioError(null);
+                  setPlaying(true);
+                }}
+              >
+                <RefreshCw className="h-4 w-4" /> Retry voice
+              </Button>
+            )}
             <Button
               variant="outline"
               size="icon-sm"
@@ -335,7 +366,7 @@ function WatchPage() {
               {i + 1}/{scenes.length}
             </span>
           </div>
-          <p className="mt-3 whitespace-pre-line rounded-2xl bg-secondary/60 p-3 text-sm leading-relaxed">
+           <p className="mt-3 whitespace-pre-line rounded-lg bg-secondary/60 p-3 text-sm leading-relaxed">
             {pretty(scene?.narration ?? "")}
           </p>
         </div>
@@ -343,11 +374,21 @@ function WatchPage() {
 
       <audio
         ref={audioRef}
-        onEnded={() => {
-          const hasCheckpoint = data.script.checkpoints.some((c) => c.after === i && !checkpointDone[i]);
-          if (!hasCheckpoint) next();
+        onTimeUpdate={(event) => {
+          const audio = event.currentTarget;
+          setAudioProgress(audio.duration ? audio.currentTime / audio.duration : 0);
         }}
-        onError={() => setAudioBroken(true)}
+        onEnded={() => {
+          setPlaying(false);
+          setAudioProgress(1);
+          if (pendingCheckpoint) setCheckpointOpen(true);
+          else next();
+        }}
+        onError={() => {
+          setAudioBroken(true);
+          setAudioError("the audio file could not be played");
+          setPlaying(false);
+        }}
         className="hidden"
       />
 
