@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/mocks/$paperId")({
 
 function MockPaperPage() {
   const { paperId } = useParams({ from: "/_authenticated/mocks/$paperId" });
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["mock-paper", paperId],
     queryFn: () => getMockPaper({ data: { paperId } }),
     staleTime: Infinity,
@@ -49,7 +49,7 @@ function MockPaperPage() {
           <Mascot size={70} mood="thinking" float className="mx-auto" />
           <p className="mt-3 font-display text-lg font-extrabold">Setting your paper… ✍️</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Building exam-accurate questions with solutions. This takes a few seconds.
+            Building every section and checking the final count. A new full paper can take about a minute.
           </p>
         </div>
       )}
@@ -57,9 +57,12 @@ function MockPaperPage() {
       {isError && (
         <div className="rounded-3xl border border-destructive/30 bg-destructive/5 p-6 text-center">
           <Mascot size={64} mood="oops" className="mx-auto" />
-          <p className="mt-3 text-sm font-medium">Couldn't build this paper. One more try? 🙌</p>
-          <Button className="mt-4 bg-sunrise text-primary-foreground" onClick={() => refetch()}>
-            <RefreshCw className="mr-1.5 h-4 w-4" /> Retry
+          <p className="mt-3 font-display text-lg font-extrabold">This paper needs another pass</p>
+          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+            {error instanceof Error ? error.message : "The paper could not be prepared right now."}
+          </p>
+          <Button disabled={isFetching} className="mt-4 bg-sunrise text-primary-foreground" onClick={() => refetch()}>
+            <RefreshCw className={isFetching ? "mr-1.5 h-4 w-4 animate-spin" : "mr-1.5 h-4 w-4"} /> Retry paper
           </Button>
         </div>
       )}

@@ -36,7 +36,7 @@ export type MockQuestion = {
 export const listMocks = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const [{ data: papers }, { data: attempts }] = await Promise.all([
+    const [{ data: papers, error: papersError }, { data: attempts, error: attemptsError }] = await Promise.all([
       context.supabase
         .from("mock_papers")
         .select("*")
@@ -49,6 +49,8 @@ export const listMocks = createServerFn({ method: "GET" })
         .eq("user_id", context.userId)
         .order("created_at", { ascending: false }),
     ]);
+    if (papersError) throw new Error(`Could not load mock papers: ${papersError.message}`);
+    if (attemptsError) throw new Error(`Could not load your mock history: ${attemptsError.message}`);
     return {
       papers: (papers ?? []) as unknown as MockPaper[],
       attempts: attempts ?? [],
@@ -128,11 +130,20 @@ export const getMockPaper = createServerFn({ method: "POST" })
       trick: q.trick ?? null,
       common_mistake: q.common_mistake ?? null,
     }));
-    const { data: inserted, error } = await supabaseAdmin
+    const { error } = await supabaseAdmin
       .from("mock_questions")
-      .insert(rows)
-      .select("*");
-    if (error) throw new Error(error.message);
+      .upsert(rows, { onConflict: "paper_id,position" });
+    if (error) throw new Error(`Could not save this paper: ${error.message}`);
+
+    const { data: inserted, error: reloadError } = await supabaseAdmin
+      .from("mock_questions")
+      .select("*")
+      .eq("paper_id", paper.id)
+      .order("position");
+    if (reloadError) throw new Error(`Could not reopen this paper: ${reloadError.message}`);
+    if (!inserted || inserted.length !== paper.question_count) {
+      throw new Error(`The paper is incomplete (${inserted?.length ?? 0}/${paper.question_count}). Please retry.`);
+    }
 
     return {
       paper: paper as unknown as MockPaper,
@@ -173,7 +184,18 @@ export const ensureTopicMock = createServerFn({ method: "POST" })
       })
       .select("id")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (error.code === "23505") {
+        const { data: raced, error: racedError } = await supabaseAdmin
+          .from("mock_papers")
+          .select("id")
+          .eq("kind", "topic")
+          .eq("topic_slug", data.slug)
+          .single();
+        if (!racedError && raced) return { paperId: raced.id as string };
+      }
+      throw new Error(error.message);
+    }
     return { paperId: created.id as string };
   });
 
