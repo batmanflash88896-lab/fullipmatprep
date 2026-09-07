@@ -65,7 +65,7 @@ const FEATURES = [
   },
 ];
 
-function Index() {
+export function Index() {
   return (
     <div className="min-h-screen bg-background">
       <header className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4">
