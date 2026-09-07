@@ -105,8 +105,13 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
         if (savedState.typed) setTyped(savedState.typed);
         if (savedState.marked) setMarked(savedState.marked);
         if (savedState.visited) setVisited(savedState.visited);
-        if (typeof savedState.seconds === "number") setSeconds(Math.max(0, savedState.seconds));
-        if (typeof savedState.deadline === "number") setDeadline(savedState.deadline);
+        const restoredSeconds = typeof savedState.seconds === "number" ? Math.max(0, savedState.seconds) : 0;
+        setSeconds(restoredSeconds);
+        if (typeof savedState.deadline === "number") {
+          setDeadline(savedState.deadline);
+        } else if (savedState.started) {
+          setDeadline(Date.now() + Math.max(0, paper.duration_min * 60 - restoredSeconds) * 1000);
+        }
       }
     } catch {
       window.sessionStorage.removeItem(storageKey);
@@ -121,7 +126,18 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
 
   useEffect(() => {
     if (!started || submitted) return;
-    const t = setInterval(() => setNow(Date.now()), 250);
+    const t = setInterval(() => {
+      const currentNow = Date.now();
+      setNow(currentNow);
+      if (deadline) {
+        setSeconds(
+          Math.min(
+            paper.duration_min * 60,
+            Math.max(0, Math.floor((currentNow - (deadline - paper.duration_min * 60 * 1000)) / 1000)),
+          ),
+        );
+      }
+    }, 250);
     return () => clearInterval(t);
   }, [started, submitted]);
 
