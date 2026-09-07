@@ -76,7 +76,49 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
   const [confirming, setConfirming] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [seconds, setSeconds] = useState(0);
+  const [deadline, setDeadline] = useState<number | null>(null);
+  const [now, setNow] = useState(0);
+  const [hydrated, setHydrated] = useState(false);
   const saved = useRef(false);
+
+  const storageKey = `ipmat-exam-session:${paper.id}`;
+
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem(storageKey);
+      if (raw) {
+        const savedState = JSON.parse(raw) as {
+          started?: boolean;
+          sectionIdx?: number;
+          index?: number;
+          answers?: Record<string, number>;
+          typed?: Record<string, string>;
+          marked?: Record<string, boolean>;
+          visited?: Record<string, boolean>;
+          seconds?: number;
+          deadline?: number;
+        };
+        if (savedState.started) setStarted(true);
+        if (typeof savedState.sectionIdx === "number") setSectionIdx(Math.max(0, savedState.sectionIdx));
+        if (typeof savedState.index === "number") setIndex(Math.max(0, savedState.index));
+        if (savedState.answers) setAnswers(savedState.answers);
+        if (savedState.typed) setTyped(savedState.typed);
+        if (savedState.marked) setMarked(savedState.marked);
+        if (savedState.visited) setVisited(savedState.visited);
+        const restoredSeconds = typeof savedState.seconds === "number" ? Math.max(0, savedState.seconds) : 0;
+        setSeconds(restoredSeconds);
+        if (typeof savedState.deadline === "number") {
+          setDeadline(savedState.deadline);
+        } else if (savedState.started) {
+          setDeadline(Date.now() + Math.max(0, paper.duration_min * 60 - restoredSeconds) * 1000);
+        }
+      }
+    } catch {
+      window.sessionStorage.removeItem(storageKey);
+    } finally {
+      setHydrated(true);
+    }
+  }, [storageKey]);
 
   const group = groups[sectionIdx] ?? groups[0];
   const list = group?.questions ?? [];
@@ -84,9 +126,28 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
 
   useEffect(() => {
     if (!started || submitted) return;
-    const t = setInterval(() => setSeconds((s) => s + 1), 1000);
+    const t = setInterval(() => {
+      const currentNow = Date.now();
+      setNow(currentNow);
+      if (deadline) {
+        setSeconds(
+          Math.min(
+            paper.duration_min * 60,
+            Math.max(0, Math.floor((currentNow - (deadline - paper.duration_min * 60 * 1000)) / 1000)),
+          ),
+        );
+      }
+    }, 250);
     return () => clearInterval(t);
   }, [started, submitted]);
+
+  useEffect(() => {
+    if (!hydrated || submitted) return;
+    window.sessionStorage.setItem(
+      storageKey,
+      JSON.stringify({ started, sectionIdx, index, answers, typed, marked, visited, seconds, deadline }),
+    );
+  }, [hydrated, storageKey, started, sectionIdx, index, answers, typed, marked, visited, seconds, deadline, submitted]);
 
   useEffect(() => {
     if (current) setVisited((v) => (v[current.id] ? v : { ...v, [current.id]: true }));
@@ -110,23 +171,29 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
   const wrongTita = questions.filter((q) => q.qtype === "tita" && attempted(q) && !isCorrect(q)).length;
   const marks = score * pattern.correct - wrongMcq * pattern.negative - wrongTita * pattern.negativeTita;
   const maxMarks = questions.length * pattern.correct;
-  const left = Math.max(0, paper.duration_min * 60 - seconds);
+  const elapsedSeconds = deadline
+    ? Math.min(paper.duration_min * 60, Math.max(0, Math.floor((Math.max(now, Date.now()) - (deadline - paper.duration_min * 60 * 1000)) / 1000)))
+    : seconds;
+  const left = deadline
+    ? Math.max(0, Math.ceil((deadline - Math.max(now, Date.now())) / 1000))
+    : Math.max(0, paper.duration_min * 60 - seconds);
 
   function finish() {
     setConfirming(false);
     setSubmitted(true);
+    window.sessionStorage.removeItem(storageKey);
     if (saved.current) return;
     saved.current = true;
-    submitMock({ data: { paperId: paper.id, score, total: questions.length, seconds } }).then(() => {
+    submitMock({ data: { paperId: paper.id, score, total: questions.length, seconds: elapsedSeconds } }).then(() => {
       queryClient.invalidateQueries({ queryKey: ["mocks"] });
       queryClient.invalidateQueries({ queryKey: ["profile-chip"] });
     });
   }
 
   useEffect(() => {
-    if (started && !submitted && left === 0 && seconds > 0) finish();
+    if (started && !submitted && deadline && left === 0) finish();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [left, submitted, started]);
+  }, [left, submitted, started, deadline]);
 
   function statusOf(q: MockQuestion): Status {
     const a = attempted(q);
@@ -186,7 +253,12 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
           <Button
             className="mt-6 w-full bg-sunrise text-primary-foreground shadow-lift"
             size="lg"
-            onClick={() => setStarted(true)}
+             onClick={() => {
+               const end = Date.now() + paper.duration_min * 60 * 1000;
+               setDeadline(end);
+               setNow(Date.now());
+               setStarted(true);
+             }}
           >
             I am ready — start the paper
           </Button>
@@ -207,7 +279,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
             {marks}/{maxMarks} marks
           </h2>
           <p className="mt-1 text-sm opacity-90">
-            {score} correct · {wrongMcq + wrongTita} wrong · {pct}% accuracy on attempts · {fmt(seconds)}
+             {score} correct · {wrongMcq + wrongTita} wrong · {pct}% accuracy on attempts · {fmt(elapsedSeconds)}
           </p>
           <p className="mt-1 text-xs opacity-80">
             Marking: +{pattern.correct} correct, −{pattern.negative} wrong MCQ

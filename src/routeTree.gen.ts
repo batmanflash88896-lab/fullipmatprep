@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as IndexIndexRouteImport } from './routes/index/index'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDoubtRouteImport } from './routes/_authenticated/doubt'
 import { Route as AuthenticatedPlanRouteImport } from './routes/_authenticated/plan'
@@ -39,6 +40,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexIndexRoute = IndexIndexRouteImport.update({
+  id: '/index/',
+  path: '/index/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/plan': typeof AuthenticatedPlanRoute
   '/vocabulary': typeof AuthenticatedVocabularyRoute
   '/api/chat': typeof ApiChatRoute
+  '/index/': typeof IndexIndexRoute
   '/doubt/$threadId': typeof AuthenticatedDoubtThreadIdRoute
   '/learn/$slug': typeof AuthenticatedLearnSlugRoute
   '/mocks/$paperId': typeof AuthenticatedMocksPaperIdRoute
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/plan': typeof AuthenticatedPlanRoute
   '/vocabulary': typeof AuthenticatedVocabularyRoute
   '/api/chat': typeof ApiChatRoute
+  '/index': typeof IndexIndexRoute
   '/doubt/$threadId': typeof AuthenticatedDoubtThreadIdRoute
   '/learn/$slug': typeof AuthenticatedLearnSlugRoute
   '/mocks/$paperId': typeof AuthenticatedMocksPaperIdRoute
@@ -161,6 +169,7 @@ export interface FileRoutesById {
   '/_authenticated/plan': typeof AuthenticatedPlanRoute
   '/_authenticated/vocabulary': typeof AuthenticatedVocabularyRoute
   '/api/chat': typeof ApiChatRoute
+  '/index/': typeof IndexIndexRoute
   '/_authenticated/doubt/$threadId': typeof AuthenticatedDoubtThreadIdRoute
   '/_authenticated/learn/$slug': typeof AuthenticatedLearnSlugRoute
   '/_authenticated/mocks/$paperId': typeof AuthenticatedMocksPaperIdRoute
@@ -181,6 +190,7 @@ export interface FileRouteTypes {
     | '/plan'
     | '/vocabulary'
     | '/api/chat'
+    | '/index/'
     | '/doubt/$threadId'
     | '/learn/$slug'
     | '/mocks/$paperId'
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/plan'
     | '/vocabulary'
     | '/api/chat'
+    | '/index'
     | '/doubt/$threadId'
     | '/learn/$slug'
     | '/mocks/$paperId'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/_authenticated/plan'
     | '/_authenticated/vocabulary'
     | '/api/chat'
+    | '/index/'
     | '/_authenticated/doubt/$threadId'
     | '/_authenticated/learn/$slug'
     | '/_authenticated/mocks/$paperId'
@@ -233,6 +245,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiChatRoute: typeof ApiChatRoute
+  IndexIndexRoute: typeof IndexIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -256,6 +269,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/index/': {
+      id: '/index/'
+      path: '/index'
+      fullPath: '/index/'
+      preLoaderRoute: typeof IndexIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/dashboard': {
@@ -408,6 +428,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiChatRoute: ApiChatRoute,
+  IndexIndexRoute: IndexIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

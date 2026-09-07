@@ -66,6 +66,7 @@ function WatchPage() {
   const [checkpointOpen, setCheckpointOpen] = useState(false);
   const [finished, setFinished] = useState(false);
   const [building, setBuilding] = useState(false);
+  const [topicError, setTopicError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urlCache = useRef<Record<number, string>>({});
 
@@ -127,9 +128,12 @@ function WatchPage() {
 
   async function startTopicTest() {
     setBuilding(true);
+    setTopicError(null);
     try {
       const { paperId } = await ensureTopicMock({ data: { slug } });
       navigate({ to: "/mocks/$paperId", params: { paperId } });
+    } catch (cause: unknown) {
+      setTopicError(cause instanceof Error ? cause.message : "The topic test could not be prepared.");
     } finally {
       setBuilding(false);
     }
@@ -426,6 +430,11 @@ function WatchPage() {
               Watch again
             </Button>
           </div>
+          {topicError && (
+            <p className="mt-3 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+              {topicError}
+            </p>
+          )}
         </div>
       )}
     </AppShell>
