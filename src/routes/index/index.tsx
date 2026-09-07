@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Index } from "../index";
 
-export const Route = createFileRoute("/index")({
+export const Route = createFileRoute("/index/")({
   head: () => ({
     meta: [
       { title: "AscendIPM — Free daily IPMAT practice & AI tutor" },
