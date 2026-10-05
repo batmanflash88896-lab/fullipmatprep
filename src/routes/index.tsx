@@ -109,9 +109,12 @@ export function Index() {
             <Button asChild size="lg" variant="outline">
               <Link to="/auth">I already have an account</Link>
             </Button>
+            <Button asChild size="lg" variant="ghost">
+              <Link to="/guest">Continue as guest</Link>
+            </Button>
           </div>
           <div className="mt-10 flex justify-center">
-            <Mascot size={110} mood="happy" float />
+            <Mascot size={110} mood="happy" float priority />
           </div>
         </div>
       </section>
