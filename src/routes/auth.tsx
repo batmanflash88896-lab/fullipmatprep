@@ -36,9 +36,12 @@ function AuthPage() {
   const [checkEmail, setCheckEmail] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard", replace: true });
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (data.session) navigate({ to: "/dashboard", replace: true });
+      })
+      .catch(() => undefined);
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       if (session) navigate({ to: "/dashboard", replace: true });
     });
@@ -65,7 +68,7 @@ function AuthPage() {
         if (error) throw error;
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Something went wrong");
+      toast.error(friendly(error));
     } finally {
       setBusy(false);
     }
@@ -73,16 +76,19 @@ function AuthPage() {
 
   async function handleGoogle() {
     setBusy(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) throw result.error;
+      if (result.redirected) return;
+      navigate({ to: "/dashboard", replace: true });
+    } catch (error) {
+      console.error(error);
+      toast.error(friendly(error));
+    } finally {
       setBusy(false);
-      toast.error("Google sign-in failed. Try email instead.");
-      return;
     }
-    if (result.redirected) return;
-    navigate({ to: "/dashboard", replace: true });
   }
 
   return (
@@ -186,9 +192,20 @@ function AuthPage() {
             >
               {mode === "signup" ? "Already have an account? Sign in" : "New here? Create an account"}
             </button>
+            <Button asChild variant="ghost" className="mt-2 w-full">
+              <Link to="/guest">Continue as guest</Link>
+            </Button>
           </>
         )}
       </div>
     </div>
   );
+}
+
+function friendly(error: unknown) {
+  const msg = error instanceof Error ? error.message : String(error ?? "");
+  if (/fetch|network|paused/i.test(msg)) {
+    return "Our sign-in service is offline right now. Please try again shortly or continue as guest.";
+  }
+  return msg || "Something went wrong. Please try again.";
 }
