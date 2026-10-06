@@ -75,10 +75,10 @@ export function Index() {
         </span>
         <div className="ml-auto flex gap-2">
           <Button asChild variant="ghost">
-            <Link to="/auth">Sign in</Link>
+            <Link to="/auth" search={{ mode: "signin" }}>Sign in</Link>
           </Button>
           <Button asChild className="bg-sunrise text-primary-foreground shadow-lift">
-            <Link to="/auth">Start free</Link>
+            <Link to="/auth" search={{ mode: "signup" }}>Start free</Link>
           </Button>
         </div>
       </header>
@@ -104,10 +104,10 @@ export function Index() {
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" className="bg-sunrise text-primary-foreground shadow-lift">
-              <Link to="/auth">Start today's set — free</Link>
+              <Link to="/auth" search={{ mode: "signup" }}>Start today's set — free</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link to="/auth">I already have an account</Link>
+              <Link to="/auth" search={{ mode: "signin" }}>I already have an account</Link>
             </Button>
             <Button asChild size="lg" variant="ghost">
               <Link to="/guest">Continue as guest</Link>
