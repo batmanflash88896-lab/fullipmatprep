@@ -36,8 +36,9 @@ export type MockQuestion = {
 export const listMocks = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [{ data: papers, error: papersError }, { data: attempts, error: attemptsError }] = await Promise.all([
-      context.supabase
+      supabaseAdmin
         .from("mock_papers")
         .select("*")
         .order("kind")
@@ -61,7 +62,8 @@ export const getMockPaper = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { paperId: string }) => input)
   .handler(async ({ data, context }) => {
-    const { data: paper, error: paperError } = await context.supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: paper, error: paperError } = await supabaseAdmin
       .from("mock_papers")
       .select("*")
       .eq("id", data.paperId)
@@ -69,7 +71,7 @@ export const getMockPaper = createServerFn({ method: "POST" })
     if (paperError) throw new Error(`Could not load this mock: ${paperError.message}`);
     if (!paper) throw new Error("Mock not found");
 
-    const { data: existing, error: questionsError } = await context.supabase
+    const { data: existing, error: questionsError } = await supabaseAdmin
       .from("mock_questions")
       .select("*")
       .eq("paper_id", data.paperId)
@@ -104,7 +106,6 @@ export const getMockPaper = createServerFn({ method: "POST" })
       );
     }
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     if (existing && existing.length > 0) {
       const { error: clearError } = await supabaseAdmin
         .from("mock_questions")
@@ -158,7 +159,8 @@ export const ensureTopicMock = createServerFn({ method: "POST" })
     const found = findTopic(data.slug);
     if (!found) throw new Error("Unknown topic");
 
-    const { data: existing, error: existingError } = await context.supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: existing, error: existingError } = await supabaseAdmin
       .from("mock_papers")
       .select("id")
       .eq("kind", "topic")
@@ -167,7 +169,6 @@ export const ensureTopicMock = createServerFn({ method: "POST" })
     if (existingError) throw new Error(existingError.message);
     if (existing) return { paperId: existing.id as string };
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: created, error } = await supabaseAdmin
       .from("mock_papers")
       .insert({

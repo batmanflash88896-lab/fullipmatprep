@@ -12,7 +12,8 @@ export const getVideoLesson = createServerFn({ method: "POST" })
     const found = findTopic(data.slug);
     if (!found) throw new Error("Unknown topic");
 
-    const { data: cached, error: cacheError } = await context.supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: cached, error: cacheError } = await supabaseAdmin
       .from("video_lessons")
       .select("script, title")
       .eq("topic_slug", data.slug)

@@ -38,7 +38,8 @@ export const getDailySet = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { section: "QA" | "VARC" }) => input)
   .handler(async ({ data, context }) => {
-    const { data: rows, error } = await context.supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
       .from("questions")
       .select("*")
       .eq("section", data.section);
@@ -101,6 +102,7 @@ export const getOverview = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
 
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [{ data: profile }, { data: attempts }, { data: leaders }] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
       supabase
@@ -109,7 +111,7 @@ export const getOverview = createServerFn({ method: "GET" })
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(400),
-      supabase
+      supabaseAdmin
         .from("profiles")
         .select("id, full_name, xp, streak")
         .order("xp", { ascending: false })
@@ -150,8 +152,9 @@ export const getVocabDeck = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [{ data: words }, { data: progress }] = await Promise.all([
-      supabase.from("vocab_words").select("*").order("word"),
+      supabaseAdmin.from("vocab_words").select("*").order("word"),
       supabase.from("vocab_progress").select("word_id, status").eq("user_id", userId),
     ]);
     const statusMap = new Map((progress ?? []).map((p) => [p.word_id, p.status]));
@@ -189,8 +192,8 @@ export const enrichWord = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { wordId: string }) => input)
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { data: row, error } = await supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row, error } = await supabaseAdmin
       .from("vocab_words")
       .select("*")
       .eq("id", data.wordId)
@@ -221,7 +224,7 @@ Include every distinct meaning the word carries (different senses or parts of sp
     if (start === -1 || end === -1) throw new Error("Could not build this word card. Try again.");
     const detail = JSON.parse(text.slice(start, end + 1)) as WordDetail;
 
-    const { data: updated, error: upErr } = await supabase
+    const { data: updated, error: upErr } = await supabaseAdmin
       .from("vocab_words")
       .update({
         part_of_speech: detail.part_of_speech ?? null,

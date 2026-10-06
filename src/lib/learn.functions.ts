@@ -34,7 +34,8 @@ export const getLesson = createServerFn({ method: "POST" })
     const { chapter, topic } = found;
 
     if (!data.regenerate) {
-      const { data: cached, error: cacheError } = await context.supabase
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: cached, error: cacheError } = await supabaseAdmin
         .from("lessons")
         .select("content")
         .eq("topic_slug", data.slug)
