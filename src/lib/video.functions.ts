@@ -42,7 +42,6 @@ export const getVideoLesson = createServerFn({ method: "POST" })
       profile?.target_college ?? null,
     );
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error: saveError } = await supabaseAdmin.from("video_lessons").upsert(
       {
         topic_slug: data.slug,
