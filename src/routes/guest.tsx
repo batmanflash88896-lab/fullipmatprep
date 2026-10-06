@@ -73,7 +73,7 @@ function GuestPage() {
           Ascend<span className="text-primary">IPM</span> <span className="text-sm font-semibold text-muted-foreground">· Guest</span>
         </span>
         <Button asChild className="ml-auto bg-sunrise text-primary-foreground shadow-lift">
-          <Link to="/auth">Create free account</Link>
+          <Link to="/auth" search={{ mode: "signup" }}>Create free account</Link>
         </Button>
       </header>
 
