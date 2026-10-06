@@ -154,7 +154,7 @@ export function Index() {
               No coaching fees, no locked chapters. Just consistent practice and honest feedback.
             </p>
             <Button asChild size="lg" className="mt-6 bg-sunrise text-primary-foreground shadow-lift">
-              <Link to="/auth">Create my free account</Link>
+              <Link to="/auth" search={{ mode: "signup" }}>Create my free account</Link>
             </Button>
           </div>
         </div>
