@@ -78,7 +78,7 @@ Rules:
 
 ${NO_LATEX_RULE}`;
 
-const SETTER = `You are an IPMAT paper setter who has taught the exam for 15 years and remembers every past paper. You reproduce exam-accurate practice papers.`;
+const SETTER = `You are an experienced IPMAT practice-paper setter. Write original challenging exam-level questions, never claim to reproduce an official or previous-year paper. Independently solve each question before finalising the answer key. Use multi-step quantitative reasoning, plausible distractors and substantive reading comprehension, not school-level drills. Ensure the final answer matches the worked solution.`;
 
 /** Big sections are generated in chunks so no single AI reply gets truncated. */
 const CHUNK = 15;
@@ -104,9 +104,9 @@ async function generateSection(
         try {
           part = await run(
         SETTER,
-        `Create part ${ci + 1} of ${chunks.length} of the "${section.label}" section of a FULL LENGTH practice paper mirroring the ${exam} ${year} paper (${pattern.label}: ${pattern.durationMin} minutes, +${pattern.correct} for correct, −${pattern.negative} for a wrong MCQ).
+        `Create part ${ci + 1} of ${chunks.length} of the "${section.label}" section of an ORIGINAL FULL LENGTH practice paper for ${exam}, variation seed ${year} (${pattern.label}: ${pattern.durationMin} minutes, +${pattern.correct} for correct, −${pattern.negative} for a wrong MCQ).
 Exactly ${n} questions. Cover ${section.brief}.
-Difficulty: ${ci === 0 ? "start with exam-level warm-ups" : ci === chunks.length - 1 ? "finish with the hardest, exam-topper level questions" : "solid exam-level difficulty"}.
+Difficulty: ${ci === chunks.length - 1 ? "include demanding exam-topper level questions" : "authentic competitive IPMAT difficulty with multi-step reasoning"}. Avoid trivial one-step percentage conversions. Mix accessible, moderate and challenging questions within each part.
 Do not repeat question ideas across parts; part ${ci + 1} must feel distinct.${
           section.code === "VARC" && section.qtype === "mcq"
             ? " Include at least one reading passage with 4 questions on it, then non-RC verbal questions."

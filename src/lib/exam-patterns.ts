@@ -8,6 +8,8 @@ export type PatternSection = {
   short: string;
   qtype: QType;
   count: number;
+  /** Dedicated time; other sections remain locked until this expires. */
+  durationMin?: number;
   /** what the AI should cover in this section */
   brief: string;
 };
@@ -43,22 +45,24 @@ const PATTERNS = {
     negativeTita: 0,
     sections: [
       {
-        key: "qa-mcq",
-        code: "QA",
-        label: "Quantitative Ability — MCQ",
-        short: "QA (MCQ)",
-        qtype: "mcq",
-        count: 45,
-        brief: QA_BRIEF,
-      },
-      {
         key: "qa-sa",
         code: "QA",
         label: "Quantitative Ability — Short Answer",
         short: "QA (SA)",
         qtype: "tita",
         count: 15,
-        brief: `${QA_BRIEF}. These are type-in answers with no options, so every answer must be a clean number`,
+        durationMin: 40,
+        brief: `${QA_BRIEF}. Type-in numerical answers with no options. Focus on multi-step algebra, number theory and arithmetic, not elementary drills`,
+      },
+      {
+        key: "qa-mcq",
+        code: "QA",
+        label: "Quantitative Ability — MCQ",
+        short: "QA (MCQ)",
+        qtype: "mcq",
+        count: 30,
+        durationMin: 40,
+        brief: QA_BRIEF,
       },
       {
         key: "varc-mcq",
@@ -67,11 +71,12 @@ const PATTERNS = {
         short: "VARC (MCQ)",
         qtype: "mcq",
         count: 45,
+        durationMin: 40,
         brief: VARC_BRIEF,
       },
     ],
     notes: [
-      "105 questions in 120 minutes — QA-MCQ 45, QA Short Answer 15, VARC-MCQ 45.",
+      "90 questions in 120 minutes — QA Short Answer 15, QA-MCQ 30, VARC-MCQ 45; 40 minutes per section.",
       "+4 for a correct answer, −1 for a wrong MCQ.",
       "Short-answer questions carry no negative marking, so never leave a solvable one blank.",
     ],

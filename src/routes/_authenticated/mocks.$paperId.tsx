@@ -17,6 +17,8 @@ export const Route = createFileRoute("/_authenticated/mocks/$paperId")({
       },
       { property: "og:title", content: "Attempt mock paper — AscendIPM" },
       { property: "og:description", content: "Timed IPMAT mock with instant scoring and full solutions." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: MockPaperPage,

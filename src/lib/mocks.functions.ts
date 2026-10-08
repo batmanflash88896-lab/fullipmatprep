@@ -33,6 +33,33 @@ export type MockQuestion = {
   common_mistake: string | null;
 };
 
+function practiceMetadata(paper: MockPaper, number: number): MockPaper {
+  if (paper.kind === "topic") return paper;
+  const pattern = getPattern(paper.pattern_key);
+  return {
+    ...paper,
+    title: `${paper.exam} — Practice Mock ${number}`,
+    question_count: pattern.sections.reduce((sum, section) => sum + section.count, 0),
+    duration_min: pattern.durationMin,
+  };
+}
+
+/** Old caches may have extra QA MCQs; use only the required section counts. */
+function completePracticeQuestions(paper: MockPaper, questions: MockQuestion[]): MockQuestion[] | null {
+  const pattern = getPattern(paper.pattern_key);
+  const selected = paper.kind === "topic" ? questions : pattern.sections.flatMap((section) =>
+    questions.filter((q) => q.section === section.code && q.qtype === section.qtype).slice(0, section.count),
+  );
+  if (selected.length !== paper.question_count) return null;
+  if (paper.kind !== "topic" && pattern.sections.some((section) =>
+    selected.filter((q) => q.section === section.code && q.qtype === section.qtype).length !== section.count,
+  )) return null;
+  if (selected.some((q) => !q.prompt?.trim() || !q.solution?.trim() || (q.qtype === "tita"
+    ? !q.answer_text?.trim()
+    : !Array.isArray(q.options) || q.options.length !== 4 || q.correct_index === null || !Number.isInteger(q.correct_index) || q.correct_index < 0 || q.correct_index >= 4))) return null;
+  return selected.map((q, position) => ({ ...q, position }));
+}
+
 export const listMocks = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -52,8 +79,13 @@ export const listMocks = createServerFn({ method: "GET" })
     ]);
     if (papersError) throw new Error(`Could not load mock papers: ${papersError.message}`);
     if (attemptsError) throw new Error(`Could not load your mock history: ${attemptsError.message}`);
+    const numbers = new Map<string, number>();
     return {
-      papers: (papers ?? []) as unknown as MockPaper[],
+      papers: ((papers ?? []) as unknown as MockPaper[]).map((paper) => {
+        const number = (numbers.get(paper.exam) ?? 0) + 1;
+        if (paper.kind !== "topic") numbers.set(paper.exam, number);
+        return practiceMetadata(paper, number);
+      }),
       attempts: attempts ?? [],
     };
   });
@@ -63,13 +95,19 @@ export const getMockPaper = createServerFn({ method: "POST" })
   .inputValidator((input: { paperId: string }) => input)
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: paper, error: paperError } = await supabaseAdmin
+    const { data: storedPaper, error: paperError } = await supabaseAdmin
       .from("mock_papers")
       .select("*")
       .eq("id", data.paperId)
       .maybeSingle();
     if (paperError) throw new Error(`Could not load this mock: ${paperError.message}`);
-    if (!paper) throw new Error("Mock not found");
+    if (!storedPaper) throw new Error("Mock not found");
+    const { data: siblings, error: siblingsError } = await supabaseAdmin.from("mock_papers")
+      .select("id").eq("exam", storedPaper.exam).eq("kind", storedPaper.kind)
+      .order("sort_order", { ascending: false });
+    if (siblingsError) throw new Error(`Could not load mock numbering: ${siblingsError.message}`);
+    const paper = practiceMetadata(storedPaper as unknown as MockPaper,
+      Math.max(1, (siblings ?? []).findIndex((p) => p.id === storedPaper.id) + 1));
 
     const { data: existing, error: questionsError } = await supabaseAdmin
       .from("mock_questions")
@@ -78,9 +116,8 @@ export const getMockPaper = createServerFn({ method: "POST" })
       .order("position");
     if (questionsError) throw new Error(`Could not load mock questions: ${questionsError.message}`);
 
-    if (existing && existing.length === paper.question_count) {
-      return { paper: paper as unknown as MockPaper, questions: existing as unknown as MockQuestion[] };
-    }
+    const cached = completePracticeQuestions(paper, (existing ?? []) as unknown as MockQuestion[]);
+    if (cached) return { paper, questions: cached };
 
     const { generatePyqPaper, generateTopicPaper } = await import("@/lib/mocks.server");
     let generated;
@@ -142,13 +179,14 @@ export const getMockPaper = createServerFn({ method: "POST" })
       .eq("paper_id", paper.id)
       .order("position");
     if (reloadError) throw new Error(`Could not reopen this paper: ${reloadError.message}`);
-    if (!inserted || inserted.length !== paper.question_count) {
+    const complete = completePracticeQuestions(paper, (inserted ?? []) as unknown as MockQuestion[]);
+    if (!complete) {
       throw new Error(`The paper is incomplete (${inserted?.length ?? 0}/${paper.question_count}). Please retry.`);
     }
 
     return {
       paper: paper as unknown as MockPaper,
-      questions: (inserted ?? []) as unknown as MockQuestion[],
+      questions: complete,
     };
   });
 

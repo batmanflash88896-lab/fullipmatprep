@@ -14,18 +14,20 @@ import { Clock, FileText, Sparkles, Target } from "lucide-react";
 export const Route = createFileRoute("/_authenticated/mocks/")({
   head: () => ({
     meta: [
-      { title: "IPMAT Mock Tests & Previous Year Papers — AscendIPM" },
+      { title: "IPMAT Full-Length Practice Mocks — AscendIPM" },
       {
         name: "description",
         content:
-          "Attempt IPMAT Indore, Rohtak and JIPMAT previous year papers year by year, plus topic-wise mocks with full solutions, tricks and common mistakes.",
+          "Practice full-length IPMAT mocks with exam-specific counts, timing and marking, plus topic tests and worked solutions.",
       },
-      { property: "og:title", content: "IPMAT Mock Tests & Previous Year Papers" },
+      { property: "og:title", content: "IPMAT Full-Length Practice Mocks — AscendIPM" },
       {
         property: "og:description",
         content:
-          "Year-wise IPMAT papers and topic mocks with timed practice and instant solutions.",
+          "Numbered practice mocks with exam-specific sections and computer-based test controls.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: MocksPage,
@@ -68,14 +70,15 @@ function MocksPage() {
           <div>
             <h1 className="font-display text-3xl font-extrabold">Mock tests 🎯</h1>
             <p className="mt-1 text-sm opacity-90">
-              Every IPMAT year paper, exam-accurate and timed — plus a topic mock after each class.
+               Full-length practice · Topic tests
             </p>
           </div>
         </div>
       </div>
 
       <section className="mt-7">
-        <h2 className="font-display text-xl font-extrabold">Previous year papers</h2>
+        <h2 className="font-display text-xl font-extrabold">Full-length practice mocks</h2>
+        <p className="mt-2 text-sm text-muted-foreground">Original AI-generated practice questions, not official previous-year papers.</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {exams.map((e) => (
             <button
@@ -110,16 +113,16 @@ function MocksPage() {
                       EXAM_STYLE[p.exam] ?? "bg-sunrise",
                     )}
                   >
-                    {p.year}
+                     Mock {pi + 1}
                   </span>
                   {best[p.id] && (
                     <span className="text-xs font-bold text-success">
-                      Best {best[p.id]!.score}/{best[p.id]!.total}
+                       Best {best[p.id]?.score}/{best[p.id]?.total}
                     </span>
                   )}
                 </div>
                 <h3 className="mt-3 font-display text-lg font-extrabold">
-                  {p.exam} {p.year}
+                   {p.title}
                 </h3>
                 <p className="text-xs font-semibold text-muted-foreground">
                   Full length ·{" "}
