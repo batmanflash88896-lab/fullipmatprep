@@ -24,6 +24,8 @@ export const Route = createFileRoute("/auth")({
         property: "og:description",
         content: "Free daily IPMAT practice, an AI doubt solver and progress tracking.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: AuthPage,

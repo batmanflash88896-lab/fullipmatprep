@@ -23,6 +23,8 @@ export const Route = createFileRoute("/_authenticated/learn/")({
         property: "og:description",
         content: "Learn every IPMAT topic with concept, tricks, worked examples and practice.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: LearnIndex,
