@@ -16,6 +16,8 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       },
       { property: "og:title", content: "Today's plan — AscendIPM" },
       { property: "og:description", content: "Daily IPMAT practice, analytics and streaks." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Dashboard,

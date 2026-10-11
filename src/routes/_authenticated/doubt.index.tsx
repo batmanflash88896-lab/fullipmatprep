@@ -16,6 +16,8 @@ export const Route = createFileRoute("/_authenticated/doubt/")({
       },
       { property: "og:title", content: "AI doubt solver — AscendIPM" },
       { property: "og:description", content: "24x7 AI tutor for IPMAT Quant and VARC doubts." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: DoubtIndex,

@@ -18,6 +18,8 @@ export const Route = createFileRoute("/_authenticated/vocabulary")({
       },
       { property: "og:title", content: "Vocabulary builder — AscendIPM" },
       { property: "og:description", content: "IPMAT words with roots, hooks and usage examples." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: VocabPage,

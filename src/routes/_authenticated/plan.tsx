@@ -25,6 +25,8 @@ export const Route = createFileRoute("/_authenticated/plan")({
         property: "og:description",
         content: "Personalised IPMAT plan by target college and days left.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: PlanPage,

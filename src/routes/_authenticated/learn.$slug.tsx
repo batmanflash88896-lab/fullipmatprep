@@ -43,6 +43,8 @@ export const Route = createFileRoute("/_authenticated/learn/$slug")({
         content:
           "Learn any IPMAT topic one micro-step at a time with instant questions and tricks.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: TopicClass,

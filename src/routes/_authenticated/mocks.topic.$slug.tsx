@@ -14,6 +14,8 @@ export const Route = createFileRoute("/_authenticated/mocks/topic/$slug")({
       },
       { property: "og:title", content: "Topic mock — AscendIPM" },
       { property: "og:description", content: "Test one topic with a timed 10-question mock." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: TopicMockRedirect,

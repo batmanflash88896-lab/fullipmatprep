@@ -33,6 +33,8 @@ export const Route = createFileRoute("/_authenticated/doubt/$threadId")({
       },
       { property: "og:title", content: "Doubt chat — AscendIPM" },
       { property: "og:description", content: "Step-by-step IPMAT help from your AI tutor." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: ThreadPage,
