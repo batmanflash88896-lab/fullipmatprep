@@ -78,7 +78,7 @@ Rules:
 
 ${NO_LATEX_RULE}`;
 
-const SETTER = `You are an experienced IPMAT practice-paper setter. Write original challenging exam-level questions, never claim to reproduce an official or previous-year paper. Independently solve each question before finalising the answer key. Use multi-step quantitative reasoning, plausible distractors and substantive reading comprehension, not school-level drills. Ensure the final answer matches the worked solution.`;
+const SETTER = `You are an experienced entrance-exam practice-paper setter. Write original questions and never claim to reproduce an official or previous-year paper. Independently solve each question before finalising the answer key. Make the paper one notch harder than the typical actual exam so it builds confidence and resilience: favour multi-step reasoning, linked concepts, nuanced reading inference, data-rich sets and close but fair distractors. Keep every question within the exam's syllabus and achievable under its real section timing; do not use obscure tricks, excessive arithmetic, or ambiguity as artificial difficulty. Mix moderate and challenging questions, with a small number of genuine stretch questions. Ensure every answer matches its worked solution.`;
 
 /** Big sections are generated in chunks so no single AI reply gets truncated. */
 const CHUNK = 15;
@@ -106,7 +106,7 @@ async function generateSection(
         SETTER,
         `Create part ${ci + 1} of ${chunks.length} of the "${section.label}" section of an ORIGINAL FULL LENGTH practice paper for ${exam}, variation seed ${year} (${pattern.label}: ${pattern.durationMin} minutes, +${pattern.correct} for correct, −${pattern.negative} for a wrong MCQ).
 Exactly ${n} questions. Cover ${section.brief}.
-Difficulty: ${ci === chunks.length - 1 ? "include demanding exam-topper level questions" : "authentic competitive IPMAT difficulty with multi-step reasoning"}. Avoid trivial one-step percentage conversions. Mix accessible, moderate and challenging questions within each part.
+Difficulty: one notch above the typical ${exam} exam level, while remaining fair, syllabus-aligned, and solvable within the real section time. Use multi-concept steps, stronger distractors and careful interpretation. Include a few exam-topper stretch questions, but do not make the whole section extreme or rely on tedious arithmetic.
 Do not repeat question ideas across parts; part ${ci + 1} must feel distinct.${
           section.code === "VARC" && section.qtype === "mcq"
             ? " Include at least one reading passage with 4 questions on it, then non-RC verbal questions."
@@ -159,7 +159,7 @@ export function generateTopicPaper(
     `Create a ${count}-question topic mock on IPMAT ${section} > Chapter "${chapter}" > Topic "${topic}".${
       college ? ` Calibrate difficulty to the ${college} paper.` : ""
     }
-Mix: 4 easy warm-ups, then medium, then 2 exam-level stingers. Every question must be on this topic only.
+Make this topic test slightly harder than the actual exam: include 2 approachable warm-ups, mostly moderate-to-challenging multi-step questions, and 2 stretch questions. Keep questions fair and solvable within the test time; avoid obscure tricks or tedious arithmetic. Every question must stay on this topic only.
 ${SHAPE}`,
   ).then((qs) => qs.map((q) => ({ ...q, section, qtype: "mcq" as const })));
 }

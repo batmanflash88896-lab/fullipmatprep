@@ -14,6 +14,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Maximize,
+  Minimize,
   Pause,
   Play,
   RefreshCw,
@@ -67,8 +69,27 @@ function WatchPage() {
   const [finished, setFinished] = useState(false);
   const [building, setBuilding] = useState(false);
   const [topicError, setTopicError] = useState<string | null>(null);
+  const [fullscreenError, setFullscreenError] = useState<string | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playerRef = useRef<HTMLDivElement | null>(null);
   const urlCache = useRef<Record<number, string>>({});
+
+  useEffect(() => {
+    const syncFullscreen = () => setFullscreen(document.fullscreenElement === playerRef.current);
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    return () => document.removeEventListener("fullscreenchange", syncFullscreen);
+  }, []);
+
+  async function toggleFullscreen() {
+    setFullscreenError(null);
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await playerRef.current?.requestFullscreen();
+    } catch {
+      setFullscreenError("Full screen is unavailable in this browser.");
+    }
+  }
 
   const pendingCheckpoint = data?.script.checkpoints.find((c) => c.after === i && !checkpointDone[i]);
   const checkpoint = checkpointOpen ? pendingCheckpoint : undefined;
@@ -196,8 +217,8 @@ function WatchPage() {
         </Button>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-border/70 bg-card shadow-pop">
-        <div className="relative aspect-video min-h-[320px] w-full overflow-hidden bg-ink p-4 text-ink-foreground sm:min-h-0 sm:p-7">
+      <div ref={playerRef} className="lecture-player mt-4 overflow-hidden rounded-2xl border border-border/70 bg-card shadow-pop">
+        <div className="lecture-board relative aspect-video min-h-[320px] w-full overflow-hidden bg-ink p-4 text-ink-foreground sm:min-h-0 sm:p-7">
           <div className="pointer-events-none absolute inset-0 board-grid opacity-30" />
           {checkpoint ? (
             <div key={`cp-${i}`} className="relative z-10 flex h-full flex-col overflow-y-auto animate-board-wipe">
@@ -366,10 +387,20 @@ function WatchPage() {
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              title={fullscreen ? "Exit full screen" : "Full screen"}
+              aria-label={fullscreen ? "Exit full screen" : "Full screen"}
+              onClick={toggleFullscreen}
+            >
+              {fullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+            </Button>
             <span className="ml-auto text-xs font-semibold text-muted-foreground">
               {i + 1}/{scenes.length}
             </span>
           </div>
+          {fullscreenError && <p role="alert" className="mt-2 text-sm text-destructive">{fullscreenError}</p>}
            <p className="mt-3 whitespace-pre-line rounded-lg bg-secondary/60 p-3 text-sm leading-relaxed">
             {pretty(scene?.narration ?? "")}
           </p>

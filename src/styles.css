@@ -370,3 +370,19 @@
   .cbt-passage { max-height: 300px; border-right: 0; border-bottom: 1px solid var(--cbt-line); }
   .cbt-header { padding: 12px 16px; }
 }
+
+.lecture-player:fullscreen {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  border: 0;
+  border-radius: 0;
+  background: var(--background);
+}
+.lecture-player:fullscreen .lecture-board {
+  flex: 1 1 0;
+  min-height: 0;
+  aspect-ratio: auto;
+}
