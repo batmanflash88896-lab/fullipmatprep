@@ -34,6 +34,8 @@ const VARC_BRIEF =
   "reading comprehension passages, para-jumbles, para-summary, sentence completion, error spotting, grammar, vocabulary in context, idioms and inference";
 const LR_BRIEF =
   "arrangements, blood relations, coding-decoding, syllogisms, series, direction sense, puzzles, data sufficiency and logical data interpretation sets";
+const IIMB_QADI_BRIEF =
+  "NCERT Mathematics from grades X–XII: arithmetic, algebra, equations and functions, geometry, mensuration, data interpretation using tables/charts/graphs/caselets, percentages, ratios, averages, and multi-step quantitative reasoning. Keep every concept within the stated school syllabus.";
 
 const PATTERNS = {
   indore: {
@@ -79,6 +81,51 @@ const PATTERNS = {
       "90 questions in 120 minutes — QA Short Answer 15, QA-MCQ 30, VARC-MCQ 45; 40 minutes per section.",
       "+4 for a correct answer, −1 for a wrong MCQ.",
       "Short-answer questions carry no negative marking, so never leave a solvable one blank.",
+    ],
+  },
+  bangalore: {
+    key: "bangalore",
+    label: "IIM Bangalore UG Admissions Test",
+    durationMin: 135,
+    correct: 3,
+    negative: 1,
+    negativeTita: 0,
+    sections: [
+      {
+        key: "qadi",
+        code: "QA",
+        label: "Quantitative Aptitude & Data Interpretation",
+        short: "QADI",
+        qtype: "mcq",
+        count: 30,
+        durationMin: 60,
+        brief: IIMB_QADI_BRIEF,
+      },
+      {
+        key: "lr",
+        code: "LR",
+        label: "Logical Reasoning",
+        short: "LR",
+        qtype: "mcq",
+        count: 15,
+        durationMin: 45,
+        brief: LR_BRIEF,
+      },
+      {
+        key: "varc",
+        code: "VARC",
+        label: "Verbal Ability & Reading Comprehension",
+        short: "VARC",
+        qtype: "mcq",
+        count: 15,
+        durationMin: 30,
+        brief: VARC_BRIEF,
+      },
+    ],
+    notes: [
+      "60 multiple-choice questions in 135 minutes — QADI 30 (60 min), LR 15 (45 min), VARC 15 (30 min).",
+      "+3 for a correct answer and −1 for a wrong answer; no type-in questions.",
+      "The section durations are fixed; the paper is based on NCERT Mathematics through grade XII.",
     ],
   },
   rohtak: {
@@ -185,6 +232,7 @@ export function getPattern(key: string | null | undefined): ExamPattern {
 }
 
 export function patternForExam(exam: string): ExamPattern {
+  if (exam === "IIM Bangalore" || exam === "IIM Bangalore UG Admissions Test" || exam === "IIM Bangalore UG-AT") return PATTERNS.bangalore;
   if (exam === "IPMAT Rohtak") return PATTERNS.rohtak;
   if (exam === "IPMAT Indore" || exam === "IPM Ranchi") return PATTERNS.indore;
   return PATTERNS.jipmat;

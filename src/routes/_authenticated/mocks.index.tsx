@@ -36,6 +36,7 @@ export const Route = createFileRoute("/_authenticated/mocks/")({
 const EXAM_STYLE: Record<string, string> = {
   "IPMAT Indore": "bg-sunrise",
   "IPMAT Rohtak": "bg-aurora",
+  "IIM Bangalore UG Admissions Test": "bg-mint",
   JIPMAT: "bg-ocean",
 };
 
@@ -43,7 +44,7 @@ function MocksPage() {
   const { data, isLoading } = useQuery({ queryKey: ["mocks"], queryFn: () => listMocks() });
   const papers = data?.papers ?? [];
   const exams = useMemo(
-    () => Array.from(new Set(papers.filter((p) => p.kind === "pyq").map((p) => p.exam))),
+    () => Array.from(new Set(papers.filter((p) => p.kind !== "topic").map((p) => p.exam))),
     [papers],
   );
   const [exam, setExam] = useState<string | null>(null);
@@ -59,7 +60,7 @@ function MocksPage() {
     return map;
   }, [data]);
 
-  const yearPapers = papers.filter((p) => p.kind === "pyq" && p.exam === activeExam);
+  const yearPapers = papers.filter((p) => p.kind !== "topic" && p.exam === activeExam);
   const topicPapers = papers.filter((p) => p.kind === "topic");
 
   return (
