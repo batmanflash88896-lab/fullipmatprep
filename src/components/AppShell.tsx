@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Mascot } from "@/components/Mascot";
+import { OrbitMark } from "@/components/OrbitMark";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Flame, LogOut, Sparkles } from "lucide-react";
@@ -9,13 +9,12 @@ import type { ReactNode } from "react";
 
 const NAV = [
   { to: "/dashboard", label: "Today" },
-  { to: "/plan", label: "My plan" },
+  { to: "/plan", label: "Planner" },
   { to: "/learn", label: "Learn" },
-  { to: "/mocks", label: "Mocks" },
-  { to: "/practice/$section", params: { section: "QA" }, label: "Quant" },
-  { to: "/practice/$section", params: { section: "VARC" }, label: "VARC" },
+  { to: "/mocks", label: "Mock" },
+  { to: "/practice/$section", params: { section: "QA" }, label: "Practice", match: "/practice" },
   { to: "/vocabulary", label: "Vocab" },
-  { to: "/doubt", label: "Doubt solver" },
+  { to: "/doubt", label: "Ask Doubt", match: "/doubt" },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -44,39 +43,48 @@ export function AppShell({ children }: { children: ReactNode }) {
     navigate({ to: "/auth", search: { mode: "signin" }, replace: true });
   }
 
+  function isActive(item: (typeof NAV)[number]) {
+    const match = (item as { match?: string }).match ?? item.to;
+    return match === "/practice" ? pathname.startsWith("/practice") : pathname.startsWith(match);
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
           <Link to="/dashboard" className="flex items-center gap-2">
-            <Mascot size={36} mood="cheer" />
-            <span className="font-display text-lg font-extrabold tracking-tight">
-              Ascend<span className="text-primary">IPM</span>
-            </span>
+            <OrbitMark />
+            <span className="font-display text-xl font-bold tracking-tight">ascendipm.</span>
           </Link>
 
-          <nav className="ml-4 hidden items-center gap-1 md:flex">
+          <nav className="ml-6 hidden items-center gap-6 text-sm font-medium text-foreground/75 md:flex">
             {NAV.map((item) => (
               <Link
                 key={item.label}
                 to={item.to}
                 params={(item as { params?: Record<string, string> }).params as never}
                 className={cn(
-                  "rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground",
-                  pathname.startsWith(item.to.replace("$section", (item as { params?: { section: string } }).params?.section ?? "")) && "bg-secondary text-foreground",
+                  "relative transition-colors hover:text-foreground",
+                  isActive(item) && "font-semibold text-foreground",
                 )}
               >
                 {item.label}
+                {isActive(item) && (
+                  <span
+                    aria-hidden
+                    className="absolute -bottom-1.5 left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full bg-primary"
+                  />
+                )}
               </Link>
             ))}
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            <span className="hidden items-center gap-1 rounded-full bg-accent/20 px-3 py-1 text-sm font-semibold text-accent-foreground sm:inline-flex">
-              <Flame className="h-4 w-4 text-primary" />
+            <span className="hidden items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-secondary-foreground sm:inline-flex">
+              <Flame className="h-4 w-4 text-accent" />
               {profile?.streak ?? 0}
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-sunrise px-3 py-1 text-sm font-semibold text-primary-foreground shadow-soft">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-sm font-semibold text-primary-foreground shadow-soft">
               <Sparkles className="h-4 w-4" />
               {profile?.xp ?? 0} XP
             </span>
@@ -94,7 +102,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               params={(item as { params?: Record<string, string> }).params as never}
               className={cn(
                 "whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground",
-                pathname.startsWith(item.to.replace("$section", (item as { params?: { section: string } }).params?.section ?? "")) && "bg-secondary text-foreground",
+                isActive(item) && "bg-secondary text-foreground",
               )}
             >
               {item.label}
