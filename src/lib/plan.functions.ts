@@ -14,8 +14,8 @@ export const COLLEGES = [
   },
   {
     id: "IIM Bangalore",
-    label: "IIM Bangalore (DBE)",
-    note: "Aptitude-style paper — clean fundamentals and RC accuracy matter most.",
+    label: "IIM Bangalore B.Sc. UG",
+    note: "B.Sc. UG Admissions Test — QADI, Logical Reasoning and VARC. Clean NCERT fundamentals and RC accuracy matter most.",
   },
   {
     id: "JIPMAT (Jammu / Bodh Gaya / Amritsar)",

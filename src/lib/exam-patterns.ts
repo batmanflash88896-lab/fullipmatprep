@@ -124,7 +124,7 @@ const PATTERNS = {
     ],
     notes: [
       "60 multiple-choice questions in 135 minutes — QADI 30 (60 min), LR 15 (45 min), VARC 15 (30 min).",
-      "+3 for a correct answer and −1 for a wrong answer; no type-in questions.",
+      "Official documents confirm negative marking but not the exact marks; this app scores it as +3 correct / −1 wrong for practice only.",
       "The section durations are fixed; the paper is based on NCERT Mathematics through grade XII.",
     ],
   },
