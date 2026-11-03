@@ -291,7 +291,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
           <h2 className="cbt-band mt-7">General instructions</h2>
           <ol className="list-decimal space-y-3 py-5 pl-6 text-sm leading-relaxed">
             <li>The timer starts when you begin. The test submits automatically when time expires.</li>
-            <li>{sectionTimed ? "Each section has 40 minutes. Sections open automatically in order. You cannot move to another section early or return to a completed section." : "You may move between sections while the test is running."}</li>
+            <li>{sectionTimed ? "Each section has its own fixed time. Sections open automatically in order. You cannot move to another section early or return to a completed section." : "You may move between sections while the test is running."}</li>
             <li>Choose an option or enter a short answer, then select Save & Next. Selecting an answer alone does not save it.</li>
             <li>Mark for Review & Next saves your response and flags it. Saved answers marked for review are evaluated.</li>
             <li>Clear Response removes the answer. Unanswered questions receive zero marks.</li>
