@@ -1,9 +1,10 @@
 export type Topic = { slug: string; name: string };
+export type Section = "QA" | "VARC" | "LR";
 export type Chapter = {
   slug: string;
   number: number;
   name: string;
-  section: "QA" | "VARC";
+  section: Section;
   topics: Topic[];
 };
 
@@ -15,7 +16,7 @@ const slugify = (s: string) =>
     .replace(/(^-|-$)/g, "");
 
 function chapter(
-  section: "QA" | "VARC",
+  section: Section,
   number: number,
   name: string,
   topics: string[],
@@ -117,14 +118,6 @@ export const QA_CHAPTERS: Chapter[] = [
     "Matrices and Determinants",
     "Sequences and Series Applications",
   ]),
-  chapter("QA", 10, "Data Interpretation and Logical Reasoning", [
-    "Tables and Caselets",
-    "Bar, Line and Pie Charts",
-    "Data Sufficiency",
-    "Arrangements and Puzzles",
-    "Blood Relations and Directions",
-    "Series, Coding and Analogy",
-  ]),
 ];
 
 export const VARC_CHAPTERS: Chapter[] = [
@@ -166,7 +159,28 @@ export const VARC_CHAPTERS: Chapter[] = [
   ]),
 ];
 
-export const ALL_CHAPTERS = [...QA_CHAPTERS, ...VARC_CHAPTERS];
+export const LR_CHAPTERS: Chapter[] = [
+  // Same chapter slug as before so cached lessons, topic progress and topic
+  // mocks for these topics keep working now that LR is its own subject.
+  chapter("LR", 1, "Data Interpretation and Logical Reasoning", [
+    "Tables and Caselets",
+    "Bar, Line and Pie Charts",
+    "Data Sufficiency",
+    "Arrangements and Puzzles",
+    "Blood Relations and Directions",
+    "Series, Coding and Analogy",
+  ]),
+  chapter("LR", 2, "Logical Reasoning", [
+    "Syllogisms and Venn Diagrams",
+    "Ranking, Order and Comparisons",
+    "Cubes, Dice and Counting Figures",
+    "Clocks and Calendars",
+    "Statements, Assumptions and Conclusions",
+    "Input-Output and Sequential Tracing",
+  ]),
+];
+
+export const ALL_CHAPTERS = [...QA_CHAPTERS, ...VARC_CHAPTERS, ...LR_CHAPTERS];
 
 export function findTopic(slug: string) {
   for (const ch of ALL_CHAPTERS) {

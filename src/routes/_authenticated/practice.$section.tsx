@@ -42,7 +42,7 @@ const CONSOLE_LINES = [
 
 function PracticePage() {
   const { section: raw } = useParams({ from: "/_authenticated/practice/$section" });
-  const section = raw === "VARC" ? "VARC" : "QA";
+  const section = raw === "VARC" ? "VARC" : raw === "LR" ? "LR" : "QA";
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -120,7 +120,11 @@ function PracticePage() {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold">
-            {section === "QA" ? "Daily Quantitative Aptitude" : "Daily VARC"}
+            {section === "QA"
+              ? "Daily Quantitative Aptitude"
+              : section === "VARC"
+                ? "Daily VARC"
+                : "Daily LR & Data Interpretation"}
           </h1>
           <p className="text-sm text-muted-foreground">
             Fresh set every day · full solution, shortcut and common mistake on every question
@@ -151,8 +155,11 @@ function PracticePage() {
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Button asChild className="bg-sunrise text-primary-foreground shadow-lift">
-              <Link to="/practice/$section" params={{ section: section === "QA" ? "VARC" : "QA" }}>
-                Do the {section === "QA" ? "VARC" : "Quant"} set
+              <Link
+                to="/practice/$section"
+                params={{ section: section === "QA" ? "VARC" : section === "VARC" ? "LR" : "QA" }}
+              >
+                Do the {section === "QA" ? "VARC" : section === "VARC" ? "LR & DI" : "Quant"} set
               </Link>
             </Button>
             <Button asChild variant="outline">

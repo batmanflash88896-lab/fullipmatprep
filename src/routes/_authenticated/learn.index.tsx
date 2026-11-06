@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Mascot } from "@/components/Mascot";
 import { Progress } from "@/components/ui/progress";
-import { QA_CHAPTERS, VARC_CHAPTERS, TOTAL_TOPICS, type Chapter } from "@/lib/syllabus";
+import { QA_CHAPTERS, VARC_CHAPTERS, LR_CHAPTERS, TOTAL_TOPICS, type Chapter } from "@/lib/syllabus";
 import { getTopicProgress } from "@/lib/learn.functions";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, ChevronDown, Circle, PlayCircle, Search, Sparkles } from "lucide-react";
@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/learn/")({
       {
         name: "description",
         content:
-          "Every QA and VARC topic, taught chapter by chapter by an AI teacher with concepts, shortcuts, worked examples and practice.",
+          "Every QA, VARC and LR topic, taught chapter by chapter by an AI teacher with concepts, shortcuts, worked examples and practice.",
       },
       { property: "og:title", content: "Full IPMAT syllabus — AI classroom" },
       {
@@ -35,7 +35,7 @@ function LearnIndex() {
     queryKey: ["topic-progress"],
     queryFn: () => getTopicProgress(),
   });
-  const [tab, setTab] = useState<"QA" | "VARC">("QA");
+  const [tab, setTab] = useState<"QA" | "VARC" | "LR">("QA");
   const [query, setQuery] = useState("");
 
   const statusMap = useMemo(
@@ -44,7 +44,7 @@ function LearnIndex() {
   );
   const done = (progress ?? []).filter((p) => p.status === "mastered").length;
 
-  const chapters = (tab === "QA" ? QA_CHAPTERS : VARC_CHAPTERS)
+  const chapters = (tab === "QA" ? QA_CHAPTERS : tab === "VARC" ? VARC_CHAPTERS : LR_CHAPTERS)
     .map((ch) => ({
       ...ch,
       topics: query
@@ -76,7 +76,7 @@ function LearnIndex() {
 
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <div className="inline-flex rounded-full bg-secondary p-1">
-          {(["QA", "VARC"] as const).map((s) => (
+          {(["QA", "VARC", "LR"] as const).map((s) => (
             <button
               key={s}
               type="button"
@@ -86,7 +86,7 @@ function LearnIndex() {
                 tab === s ? "bg-sunrise text-primary-foreground shadow-lift" : "text-muted-foreground",
               )}
             >
-              {s === "QA" ? "Quantitative Aptitude" : "VARC"}
+              {s === "QA" ? "Quantitative Aptitude" : s === "VARC" ? "VARC" : "LR & DI"}
             </button>
           ))}
         </div>

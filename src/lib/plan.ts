@@ -11,17 +11,18 @@ const BASE_WEIGHT: Record<string, number> = {
   mensuration: 6,
   "modern-maths": 9,
   "data-interpretation-and-logical-reasoning": 8,
+  "logical-reasoning": 8,
   "reading-comprehension": 13,
   vocabulary: 10,
   grammar: 9,
   "verbal-reasoning": 9,
 };
 
-const COLLEGE_TILT: Record<string, { QA: number; VARC: number; dilr: number }> = {
-  "IIM Indore": { QA: 1.3, VARC: 0.85, dilr: 0.9 },
-  "IIM Rohtak": { QA: 1, VARC: 1, dilr: 1.5 },
-  "IIM Bangalore": { QA: 1, VARC: 1.2, dilr: 1.1 },
-  "JIPMAT (Jammu / Bodh Gaya / Amritsar)": { QA: 0.85, VARC: 1.25, dilr: 1.3 },
+const COLLEGE_TILT: Record<string, { QA: number; VARC: number; LR: number }> = {
+  "IIM Indore": { QA: 1.3, VARC: 0.85, LR: 0.9 },
+  "IIM Rohtak": { QA: 1, VARC: 1, LR: 1.5 },
+  "IIM Bangalore": { QA: 1, VARC: 1.2, LR: 1.1 },
+  "JIPMAT (Jammu / Bodh Gaya / Amritsar)": { QA: 0.85, VARC: 1.25, LR: 1.3 },
 };
 
 export type PlanBlock = {
@@ -34,15 +35,14 @@ export type PlanBlock = {
 };
 
 export function buildPlan(daysLeft: number, college: string | null) {
-  const tilt = (college && COLLEGE_TILT[college]) || { QA: 1, VARC: 1, dilr: 1 };
+  const tilt = (college && COLLEGE_TILT[college]) || { QA: 1, VARC: 1, LR: 1 };
   const learnDays = Math.max(7, Math.round(daysLeft * 0.7));
   const revisionDays = Math.max(3, Math.round(daysLeft * 0.18));
   const mockDays = Math.max(2, daysLeft - learnDays - revisionDays);
 
   const scored = ALL_CHAPTERS.map((ch) => {
     const base = BASE_WEIGHT[ch.slug] ?? 6;
-    const dilr = ch.slug === "data-interpretation-and-logical-reasoning" ? tilt.dilr : 1;
-    return { ch, score: base * tilt[ch.section] * dilr };
+    return { ch, score: base * tilt[ch.section] };
   });
   const total = scored.reduce((n, s) => n + s.score, 0);
   const maxScore = Math.max(...scored.map((s) => s.score));
