@@ -414,3 +414,72 @@
   min-height: 0;
   aspect-ratio: auto;
 }
+
+/* ============================================================
+   Signed-out views (landing, sign-in, guest) keep the original
+   "Sunrise Momentum" palette. The signed-in app stays on Orbit.
+   ============================================================ */
+.sunrise-theme {
+  --radius: 1rem;
+  /* Warm cream page, sunset-orange actions, deep purple ink,
+     aurora gradients and a soft ambient mesh. */
+  --background: oklch(0.982 0.014 62);
+  --foreground: oklch(0.27 0.09 285);
+  --card: oklch(1 0.004 80);
+  --card-foreground: oklch(0.27 0.09 285);
+  --popover: oklch(1 0.004 80);
+  --popover-foreground: oklch(0.27 0.09 285);
+  --primary: oklch(0.686 0.187 33);
+  --primary-foreground: oklch(0.99 0.01 80);
+  --secondary: oklch(0.945 0.03 70);
+  --secondary-foreground: oklch(0.32 0.09 285);
+  --muted: oklch(0.952 0.018 68);
+  --muted-foreground: oklch(0.53 0.045 285);
+  --accent: oklch(0.79 0.155 74);
+  --accent-foreground: oklch(0.27 0.09 285);
+  --destructive: oklch(0.58 0.225 27);
+  --destructive-foreground: oklch(0.99 0.01 80);
+  --success: oklch(0.63 0.15 155);
+  --success-foreground: oklch(0.99 0.01 80);
+  --ink: oklch(0.27 0.09 285);
+  --ink-foreground: oklch(0.98 0.012 65);
+  --lime: oklch(0.87 0.17 115);
+  --border: oklch(0.9 0.025 62);
+  --input: oklch(0.9 0.025 62);
+  --ring: oklch(0.686 0.187 33);
+  --chart-1: oklch(0.686 0.187 33);
+  --chart-2: oklch(0.79 0.155 74);
+  --chart-3: oklch(0.45 0.13 285);
+  --chart-4: oklch(0.63 0.15 155);
+  --chart-5: oklch(0.62 0.16 340);
+  --sidebar: oklch(0.99 0.01 70);
+  --sidebar-foreground: oklch(0.27 0.09 285);
+  --sidebar-primary: oklch(0.686 0.187 33);
+  --sidebar-primary-foreground: oklch(0.99 0.01 80);
+  --sidebar-accent: oklch(0.95 0.025 68);
+  --sidebar-accent-foreground: oklch(0.27 0.09 285);
+  --sidebar-border: oklch(0.9 0.025 62);
+  --sidebar-ring: oklch(0.686 0.187 33);
+  --gradient-sunrise: linear-gradient(135deg, oklch(0.686 0.187 33), oklch(0.79 0.155 74));
+  --gradient-dusk: linear-gradient(140deg, oklch(0.3 0.1 285), oklch(0.4 0.14 320));
+  --gradient-glow: radial-gradient(60% 60% at 50% 0%, oklch(0.79 0.155 74 / 35%), transparent 70%);
+  --gradient-aurora: linear-gradient(135deg, oklch(0.62 0.21 300), oklch(0.66 0.2 12), oklch(0.79 0.16 74));
+  --gradient-candy: linear-gradient(135deg, oklch(0.66 0.22 350), oklch(0.7 0.19 30));
+  --gradient-ocean: linear-gradient(135deg, oklch(0.58 0.16 250), oklch(0.72 0.14 195));
+  --gradient-mint: linear-gradient(135deg, oklch(0.66 0.16 165), oklch(0.78 0.15 130));
+  --gradient-mesh:
+    radial-gradient(46% 38% at 8% 0%, oklch(0.79 0.155 74 / 30%), transparent 62%),
+    radial-gradient(44% 36% at 96% 6%, oklch(0.66 0.21 320 / 26%), transparent 64%),
+    radial-gradient(50% 40% at 50% 100%, oklch(0.7 0.15 210 / 20%), transparent 66%);
+  --shadow-soft: 0 1px 2px oklch(0.27 0.09 285 / 6%), 0 8px 24px -12px oklch(0.27 0.09 285 / 18%);
+  --shadow-lift: 0 18px 40px -18px oklch(0.686 0.187 33 / 45%);
+  --shadow-pop: 0 22px 48px -20px oklch(0.62 0.21 300 / 45%);
+  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  background-color: var(--color-background);
+  background-image: var(--gradient-mesh);
+  background-attachment: fixed;
+  color: var(--color-foreground);
+  font-family: var(--font-body);
+}
