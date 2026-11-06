@@ -66,7 +66,7 @@ function GuestPage() {
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-5xl px-4 pb-20 pt-6">
+    <div className="sunrise-theme mx-auto min-h-screen max-w-5xl px-4 pb-20 pt-6">
       <header className="flex items-center gap-3">
         <Mascot size={40} mood="cheer" priority />
         <span className="font-display text-lg font-extrabold">

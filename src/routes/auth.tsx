@@ -99,7 +99,7 @@ function AuthPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
+    <div className="sunrise-theme relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-80"

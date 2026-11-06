@@ -3,7 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type Question = {
   id: string;
-  section: "QA" | "VARC";
+  section: "QA" | "VARC" | "LR";
   topic: string;
   difficulty: string;
   passage: string | null;
@@ -36,7 +36,7 @@ function seededOrder<T extends { id: string }>(items: T[], seed: string) {
 
 export const getDailySet = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { section: "QA" | "VARC" }) => input)
+  .inputValidator((input: { section: "QA" | "VARC" | "LR" }) => input)
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
@@ -140,6 +140,7 @@ export const getOverview = createServerFn({ method: "GET" })
       profile: profile ?? null,
       qa: section("QA"),
       varc: section("VARC"),
+      lr: section("LR"),
       total: rows.length,
       correct: rows.filter((r) => r.is_correct).length,
       topics: Object.values(byTopic).sort((a, b) => a.correct / a.total - b.correct / b.total),
