@@ -92,6 +92,7 @@ export function ExamRunner({ paper, questions, userId }: { paper: MockPaper; que
   const [draftText, setDraftText] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [pendingSubmission, setPendingSubmission] = useState<PendingSubmission | null>(null);
+  const [finalSeconds, setFinalSeconds] = useState<number | null>(null);
   const examRef = useRef<HTMLDivElement>(null);
 
   async function toggleFullscreen() {
@@ -120,6 +121,7 @@ export function ExamRunner({ paper, questions, userId }: { paper: MockPaper; que
           setAnswers(pending.responses.answers ?? {});
           setTyped(pending.responses.typed ?? {});
           setSeconds(pending.seconds);
+          setFinalSeconds(pending.seconds);
           setSubmitted(true);
           setStarted(true);
         } else {
@@ -212,7 +214,7 @@ export function ExamRunner({ paper, questions, userId }: { paper: MockPaper; que
   const wrongTita = questions.filter((q) => q.qtype === "tita" && attempted(q) && !isCorrect(q)).length;
   const marks = score * pattern.correct - wrongMcq * pattern.negative - wrongTita * pattern.negativeTita;
   const maxMarks = questions.length * pattern.correct;
-  const elapsedSeconds = pendingSubmission?.seconds ?? (deadline
+  const elapsedSeconds = finalSeconds ?? pendingSubmission?.seconds ?? (deadline
     ? Math.min(paper.duration_min * 60, Math.max(0, Math.floor((Math.max(now, Date.now()) - (deadline - paper.duration_min * 60 * 1000)) / 1000)))
     : seconds);
   const left = deadline
@@ -257,15 +259,19 @@ export function ExamRunner({ paper, questions, userId }: { paper: MockPaper; que
     }
     setConfirming(false);
     setSubmitted(true);
+    const responseSnapshot = {
+      answers: { ...answers, ...(current?.qtype === "mcq" && draftOption !== undefined ? { [current.id]: draftOption } : {}) },
+      typed: { ...typed, ...(current?.qtype === "tita" && draftText.trim() ? { [current.id]: draftText.trim() } : {}) },
+    };
     const payload: PendingSubmission = {
       attemptId: crypto.randomUUID(),
       paperId: paper.id,
-      responses: {
-        answers: { ...answers, ...(current?.qtype === "mcq" && draftOption !== undefined ? { [current.id]: draftOption } : {}) },
-        typed: { ...typed, ...(current?.qtype === "tita" && draftText.trim() ? { [current.id]: draftText.trim() } : {}) },
-      },
+      responses: responseSnapshot,
       seconds: elapsedSeconds,
     };
+    setAnswers(responseSnapshot.answers);
+    setTyped(responseSnapshot.typed);
+    setFinalSeconds(payload.seconds);
     window.sessionStorage.setItem(pendingKey, JSON.stringify(payload));
     setPendingSubmission(payload);
   }

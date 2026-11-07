@@ -106,7 +106,10 @@ export const listMocks = createServerFn({ method: "GET" })
 
 export const getMockPaper = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { paperId: string }) => input)
+  .inputValidator((input: { paperId: string }) => {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.paperId)) throw new Error("Invalid mock paper ID");
+    return input;
+  })
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: storedPaper, error: paperError } = await supabaseAdmin
@@ -267,6 +270,7 @@ export const submitMock = createServerFn({ method: "POST" })
     if (paperError) throw new Error(`Could not verify this mock: ${paperError.message}`);
     if (!paper) throw new Error("Mock not found");
     if (questionsError) throw new Error(`Could not verify your answers: ${questionsError.message}`);
+    if (data.seconds > paper.duration_min * 60) throw new Error("The submitted duration exceeds this mock's time limit.");
     const pattern = getPattern(paper.pattern_key);
     const questionData = (storedQuestions ?? []) as Array<Pick<MockQuestion, "id" | "qtype" | "correct_index" | "answer_text" | "section">>;
     const expectedCount = paper.kind === "topic"
