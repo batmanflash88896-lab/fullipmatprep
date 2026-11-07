@@ -264,7 +264,7 @@ export const submitMock = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [{ data: paper, error: paperError }, { data: storedQuestions, error: questionsError }] = await Promise.all([
-      supabaseAdmin.from("mock_papers").select("id, kind, pattern_key, question_count").eq("id", data.paperId).maybeSingle(),
+      supabaseAdmin.from("mock_papers").select("id, kind, pattern_key, question_count, duration_min").eq("id", data.paperId).maybeSingle(),
       supabaseAdmin.from("mock_questions").select("id, qtype, correct_index, answer_text, section").eq("paper_id", data.paperId).order("position"),
     ]);
     if (paperError) throw new Error(`Could not verify this mock: ${paperError.message}`);
