@@ -27,12 +27,14 @@ export function extractQuestions(text: string, qtype: "mcq" | "tita" = "mcq"): G
   const questions = (parsed.questions ?? []).filter((q) =>
     q && typeof q.prompt === "string" && q.prompt.trim().length > 0
       ? qtype === "tita"
-        ? typeof q.answer_text === "string" && q.answer_text.trim().length > 0
+        ? typeof q.answer_text === "string" && q.answer_text.trim().length > 0 && typeof q.solution === "string" && q.solution.trim().length > 0
         : Array.isArray(q.options) &&
-          q.options.length >= 2 &&
+          q.options.length === 4 &&
+          q.options.every((option) => typeof option === "string" && option.trim().length > 0) &&
           Number.isInteger(q.correct_index) &&
           (q.correct_index ?? -1) >= 0 &&
-          (q.correct_index ?? -1) < q.options.length
+          (q.correct_index ?? -1) < q.options.length &&
+          typeof q.solution === "string" && q.solution.trim().length > 0
       : false,
   );
   if (questions.length === 0) throw new Error("Could not build this mock. Try again.");
@@ -96,13 +98,13 @@ async function generateSection(
     left -= CHUNK;
   }
 
-  const results = await Promise.all(
-    chunks.map(async (n, ci) => {
-      let part: GeneratedQuestion[] = [];
-      let lastError: unknown;
-      for (let attempt = 0; attempt < 2 && part.length < n; attempt += 1) {
-        try {
-          part = await run(
+  const results: GeneratedQuestion[][] = [];
+  for (const [ci, n] of chunks.entries()) {
+    let part: GeneratedQuestion[] = [];
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 2 && part.length < n; attempt += 1) {
+      try {
+        part = await run(
         SETTER,
         `Create part ${ci + 1} of ${chunks.length} of the "${section.label}" section of an ORIGINAL FULL LENGTH practice paper for ${exam}, variation seed ${year} (${pattern.label}: ${pattern.durationMin} minutes, +${pattern.correct} for correct, −${pattern.negative} for a wrong MCQ).
 Exactly ${n} questions. Cover ${section.brief}.
@@ -114,25 +116,28 @@ Do not repeat question ideas across parts; part ${ci + 1} must feel distinct.${
         }
 ${section.qtype === "tita" ? SHAPE_TITA : SHAPE}
 This response is accepted only when the questions array contains exactly ${n} complete questions. Count carefully before replying.`,
-            section.qtype,
-          );
-        } catch (error) {
-          lastError = error;
-        }
+          section.qtype,
+        );
+      } catch (error) {
+        lastError = error;
       }
-      if (part.length < n) {
-        if (lastError instanceof Error) throw lastError;
-        throw new Error(`Sunny generated only ${part.length} of ${n} questions for ${section.label}. Please retry.`);
-      }
-      return part.slice(0, n);
-    }),
-  );
+    }
+    if (part.length < n) {
+      if (lastError instanceof Error) throw lastError;
+      throw new Error(`Sunny generated only ${part.length} of ${n} questions for ${section.label}. Please retry.`);
+    }
+    results.push(part.slice(0, n));
+  }
 
-  return results.flat().slice(0, section.count).map((q) => ({
+  const questions = results.flat().slice(0, section.count).map((q) => ({
     ...q,
     section: section.code,
     qtype: section.qtype,
   }));
+  if (questions.length !== section.count) {
+    throw new Error(`Sunny generated only ${questions.length} of ${section.count} questions for ${section.label}. Please retry.`);
+  }
+  return questions;
 }
 
 export async function generatePyqPaper(exam: string, year: number, pattern: ExamPattern) {
@@ -154,12 +159,27 @@ export function generateTopicPaper(
   count: number,
   college: string | null,
 ) {
-  return run(
-    `You are an IPMAT paper setter. You build tight topic tests that check whether a student has truly mastered one topic.`,
-    `Create a ${count}-question topic mock on IPMAT ${section} > Chapter "${chapter}" > Topic "${topic}".${
-      college ? ` Calibrate difficulty to the ${college} paper.` : ""
-    }
+  return (async () => {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const questions = await run(
+          `You are an IPMAT paper setter. You build tight topic tests that check whether a student has truly mastered one topic.`,
+          `Create exactly ${count} questions for a topic mock on IPMAT ${section} > Chapter "${chapter}" > Topic "${topic}".${
+            college ? ` Calibrate difficulty to the ${college} paper.` : ""
+          }
 Make this topic test slightly harder than the actual exam: include 2 approachable warm-ups, mostly moderate-to-challenging multi-step questions, and 2 stretch questions. Keep questions fair and solvable within the test time; avoid obscure tricks or tedious arithmetic. Every question must stay on this topic only.
 ${SHAPE}`,
-  ).then((qs) => qs.map((q) => ({ ...q, section, qtype: "mcq" as const })));
+        );
+        if (questions.length !== count) {
+          throw new Error(`Sunny generated ${questions.length} of ${count} questions. Please retry.`);
+        }
+        return questions.map((q) => ({ ...q, section, qtype: "mcq" as const }));
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    if (lastError instanceof Error) throw lastError;
+    throw new Error("Could not finish this topic test. Please retry.");
+  })();
 }
