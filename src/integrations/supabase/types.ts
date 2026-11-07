@@ -547,6 +547,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      replace_mock_questions: {
+        Args: { p_paper_id: string; p_rows: Json }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
