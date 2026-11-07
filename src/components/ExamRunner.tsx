@@ -208,9 +208,9 @@ export function ExamRunner({ paper, questions, userId }: { paper: MockPaper; que
   const wrongTita = questions.filter((q) => q.qtype === "tita" && attempted(q) && !isCorrect(q)).length;
   const marks = score * pattern.correct - wrongMcq * pattern.negative - wrongTita * pattern.negativeTita;
   const maxMarks = questions.length * pattern.correct;
-  const elapsedSeconds = deadline
-    ? Math.min(paper.duration_min * 60, Math.max(0, Math.floor((Math.max(now, deadline && submitted ? now : Date.now()) - (deadline - paper.duration_min * 60 * 1000)) / 1000)))
-    : seconds;
+  const elapsedSeconds = pendingSubmission?.seconds ?? (deadline
+    ? Math.min(paper.duration_min * 60, Math.max(0, Math.floor((Math.max(now, Date.now()) - (deadline - paper.duration_min * 60 * 1000)) / 1000)))
+    : seconds);
   const left = deadline
     ? Math.max(0, Math.ceil((deadline - Math.max(now, Date.now())) / 1000))
     : Math.max(0, paper.duration_min * 60 - seconds);

@@ -41,7 +41,7 @@ const EXAM_STYLE: Record<string, string> = {
 };
 
 function MocksPage() {
-  const { data, isLoading } = useQuery({ queryKey: ["mocks"], queryFn: () => listMocks() });
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({ queryKey: ["mocks"], queryFn: () => listMocks() });
   const papers = data?.papers ?? [];
   const exams = useMemo(
     () => Array.from(new Set(papers.filter((p) => p.kind !== "topic").map((p) => p.exam))),
@@ -98,7 +98,9 @@ function MocksPage() {
         </div>
 
         {isLoading && <p className="mt-5 text-sm text-muted-foreground">Loading papers…</p>}
+        {isError && <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-3 border border-destructive/40 bg-destructive/5 p-4 text-sm"><span>{error instanceof Error ? error.message : "Mock papers could not be loaded."}</span><Button variant="outline" disabled={isFetching} onClick={() => refetch()}>Retry loading</Button></div>}
 
+        {!isLoading && !isError && yearPapers.length === 0 && <p className="mt-4 text-sm text-muted-foreground">No papers are available for this exam yet.</p>}
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {yearPapers.map((p, pi) => (
             <Reveal key={p.id} delay={pi * 35} className="h-full">
