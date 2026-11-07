@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { Mascot } from "@/components/Mascot";
 import { cn } from "@/lib/utils";
 import { pretty } from "@/lib/format";
 import { submitMock, type MockPaper, type MockQuestion } from "@/lib/mocks.functions";
 import { getPattern } from "@/lib/exam-patterns";
+import { countMockCorrect, isMockAnswerCorrect } from "@/lib/mock-grading";
 import {
   CheckCircle2,
   Clock,
@@ -31,18 +33,16 @@ function fmt(sec: number) {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
-/** "3/4", "0.75", " 12 " all compare cleanly against the setter's answer. */
-function normalize(v: string) {
-  const t = v.trim().replace(/\s+/g, "").replace(/,/g, "");
-  if (!t) return "";
-  const frac = t.match(/^(-?\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/);
-  const num = frac ? Number(frac[1]) / Number(frac[2]) : Number(t);
-  if (Number.isFinite(num)) return String(Math.round(num * 1e6) / 1e6);
-  return t.toLowerCase();
-}
+type PendingSubmission = {
+  attemptId: string;
+  paperId: string;
+  responses: { answers: Record<string, number>; typed: Record<string, string> };
+  seconds: number;
+};
 
-export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: MockQuestion[] }) {
+export function ExamRunner({ paper, questions, userId }: { paper: MockPaper; questions: MockQuestion[]; userId: string }) {
   const queryClient = useQueryClient();
+  const submitAttempt = useServerFn(submitMock);
   const pattern = useMemo(() => getPattern(paper.pattern_key), [paper.pattern_key]);
 
   /** Ordered exam sections (e.g. QA-MCQ → QA Short Answer → VARC) with their questions. */
@@ -91,6 +91,8 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
   const [draftOption, setDraftOption] = useState<number | undefined>();
   const [draftText, setDraftText] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [pendingSubmission, setPendingSubmission] = useState<PendingSubmission | null>(null);
+  const [finalSeconds, setFinalSeconds] = useState<number | null>(null);
   const examRef = useRef<HTMLDivElement>(null);
 
   async function toggleFullscreen() {
@@ -105,12 +107,28 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
     return () => document.removeEventListener("fullscreenchange", update);
   }, []);
 
-  const storageKey = `ipmat-exam-session:v2:${paper.id}`;
+  const storageKey = `ipmat-exam-session:v3:${userId}:${paper.id}`;
+  const pendingKey = `${storageKey}:pending`;
 
   useEffect(() => {
     try {
       const raw = window.sessionStorage.getItem(storageKey);
-      if (raw) {
+      const pendingRaw = window.sessionStorage.getItem(pendingKey);
+      if (pendingRaw) {
+        const pending = JSON.parse(pendingRaw) as PendingSubmission;
+        if (pending.paperId === paper.id && pending.responses && typeof pending.attemptId === "string" && typeof pending.seconds === "number") {
+          setPendingSubmission(pending);
+          setAnswers(pending.responses.answers ?? {});
+          setTyped(pending.responses.typed ?? {});
+          setSeconds(pending.seconds);
+          setFinalSeconds(pending.seconds);
+          setSubmitted(true);
+          setStarted(true);
+        } else {
+          window.sessionStorage.removeItem(pendingKey);
+        }
+      }
+      if (raw && !pendingRaw) {
         const savedState = JSON.parse(raw) as {
           started?: boolean;
           sectionIdx?: number;
@@ -123,12 +141,14 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
           deadline?: number;
         };
         if (savedState.started) setStarted(true);
-        if (typeof savedState.sectionIdx === "number") setSectionIdx(Math.max(0, savedState.sectionIdx));
-        if (typeof savedState.index === "number") setIndex(Math.max(0, savedState.index));
-        if (savedState.answers) setAnswers(savedState.answers);
-        if (savedState.typed) setTyped(savedState.typed);
-        if (savedState.marked) setMarked(savedState.marked);
-        if (savedState.visited) setVisited(savedState.visited);
+        if (typeof savedState.sectionIdx === "number") setSectionIdx(Math.max(0, Math.min(groups.length - 1, savedState.sectionIdx)));
+        const safeAnswers = Object.fromEntries(Object.entries(savedState.answers ?? {}).filter(([id, answer]) => questions.some((question) => question.id === id && question.qtype === "mcq") && Number.isInteger(answer) && answer >= 0 && answer < 4));
+        const safeTyped = Object.fromEntries(Object.entries(savedState.typed ?? {}).filter(([id, answer]) => questions.some((question) => question.id === id && question.qtype === "tita") && typeof answer === "string"));
+        if (safeAnswers) setAnswers(safeAnswers);
+        if (safeTyped) setTyped(safeTyped);
+        if (savedState.marked) setMarked(Object.fromEntries(Object.entries(savedState.marked).filter(([id]) => questions.some((question) => question.id === id))));
+        if (savedState.visited) setVisited(Object.fromEntries(Object.entries(savedState.visited).filter(([id]) => questions.some((question) => question.id === id))));
+        if (typeof savedState.index === "number") setIndex(Math.max(0, Math.min((groups[Math.max(0, Math.min(groups.length - 1, savedState.sectionIdx ?? 0))]?.questions.length ?? 1) - 1, savedState.index)));
         const restoredSeconds = typeof savedState.seconds === "number" ? Math.max(0, savedState.seconds) : 0;
         setSeconds(restoredSeconds);
         if (typeof savedState.deadline === "number") {
@@ -142,7 +162,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
     } finally {
       setHydrated(true);
     }
-  }, [storageKey]);
+  }, [storageKey, pendingKey, paper.id, groups, questions]);
 
   const group = groups[sectionIdx] ?? groups[0];
   const list = group?.questions ?? [];
@@ -186,22 +206,17 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
   }
 
   function isCorrect(q: MockQuestion) {
-    if (q.qtype === "tita") {
-      const t = typed[q.id];
-      if (!t || !q.answer_text) return false;
-      return normalize(t) === normalize(q.answer_text);
-    }
-    return answers[q.id] === q.correct_index;
+    return isMockAnswerCorrect(q, { answers, typed });
   }
 
-  const score = questions.filter((q) => isCorrect(q)).length;
+  const score = countMockCorrect(questions, { answers, typed });
   const wrongMcq = questions.filter((q) => q.qtype !== "tita" && attempted(q) && !isCorrect(q)).length;
   const wrongTita = questions.filter((q) => q.qtype === "tita" && attempted(q) && !isCorrect(q)).length;
   const marks = score * pattern.correct - wrongMcq * pattern.negative - wrongTita * pattern.negativeTita;
   const maxMarks = questions.length * pattern.correct;
-  const elapsedSeconds = deadline
+  const elapsedSeconds = finalSeconds ?? pendingSubmission?.seconds ?? (deadline
     ? Math.min(paper.duration_min * 60, Math.max(0, Math.floor((Math.max(now, Date.now()) - (deadline - paper.duration_min * 60 * 1000)) / 1000)))
-    : seconds;
+    : seconds);
   const left = deadline
     ? Math.max(0, Math.ceil((deadline - Math.max(now, Date.now())) / 1000))
     : Math.max(0, paper.duration_min * 60 - seconds);
@@ -237,20 +252,52 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
     go(index + 1);
   }
 
-  function finish() {
+  async function finish() {
+    if (pendingSubmission) {
+      await saveSubmission(pendingSubmission);
+      return;
+    }
     setConfirming(false);
     setSubmitted(true);
-    window.sessionStorage.removeItem(storageKey);
+    const responseSnapshot = {
+      answers: { ...answers, ...(current?.qtype === "mcq" && draftOption !== undefined ? { [current.id]: draftOption } : {}) },
+      typed: { ...typed, ...(current?.qtype === "tita" && draftText.trim() ? { [current.id]: draftText.trim() } : {}) },
+    };
+    const payload: PendingSubmission = {
+      attemptId: crypto.randomUUID(),
+      paperId: paper.id,
+      responses: responseSnapshot,
+      seconds: elapsedSeconds,
+    };
+    setAnswers(responseSnapshot.answers);
+    setTyped(responseSnapshot.typed);
+    setFinalSeconds(payload.seconds);
+    window.sessionStorage.setItem(pendingKey, JSON.stringify(payload));
+    setPendingSubmission(payload);
+  }
+
+  async function saveSubmission(payload: PendingSubmission) {
     if (saved.current) return;
     saved.current = true;
-    submitMock({ data: { paperId: paper.id, score, total: questions.length, seconds: elapsedSeconds } }).then(() => {
+    try {
+      await submitAttempt({ data: payload });
+      window.sessionStorage.removeItem(storageKey);
+      window.sessionStorage.removeItem(pendingKey);
       queryClient.invalidateQueries({ queryKey: ["mocks"] });
       queryClient.invalidateQueries({ queryKey: ["profile-chip"] });
-    }).catch(() => {
+      setPendingSubmission(null);
+      setSaveError(null);
+    } catch {
       saved.current = false;
       setSaveError("Your result could not be saved. Retry saving without losing your result.");
-    });
+    }
   }
+
+  useEffect(() => {
+    if (pendingSubmission) void saveSubmission(pendingSubmission);
+    // A pending attempt is intentionally retried after reload until acknowledged.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingSubmission]);
 
   useEffect(() => {
     if (started && !submitted && deadline && left === 0) finish();

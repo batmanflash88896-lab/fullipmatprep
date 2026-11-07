@@ -13,3 +13,4 @@
 - Keep exam counts, section order, timing and marking in `src/lib/exam-patterns.ts`; all mock metadata and cached-paper validation derive from it to prevent stale database counts.
 - Scope the serious CBT theme to the exam runner so classroom styling cannot change the exam workspace.
 - Label AI-generated full-length papers as numbered practice mocks, never verified previous-year papers.
+- Grade mock responses on the authenticated server and persist attempts idempotently so retries cannot duplicate XP or lose results.

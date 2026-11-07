@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { findTopic } from "@/lib/syllabus";
 import { getPattern } from "@/lib/exam-patterns";
+import { countMockCorrect } from "@/lib/mock-grading";
 
 export type MockPaper = {
   id: string;
@@ -33,6 +34,19 @@ export type MockQuestion = {
   common_mistake: string | null;
 };
 
+type MockResponses = {
+  answers: Record<string, number>;
+  typed: Record<string, string>;
+};
+
+function isMockResponses(value: unknown): value is MockResponses {
+  if (!value || typeof value !== "object") return false;
+  const responses = value as { answers?: unknown; typed?: unknown };
+  if (!responses.answers || typeof responses.answers !== "object" || !responses.typed || typeof responses.typed !== "object") return false;
+  return Object.values(responses.answers).every((answer) => Number.isInteger(answer) && Number(answer) >= 0 && Number(answer) < 4)
+    && Object.values(responses.typed).every((answer) => typeof answer === "string" && answer.length <= 200);
+}
+
 function practiceMetadata(paper: MockPaper, number: number): MockPaper {
   if (paper.kind === "topic") return paper;
   const pattern = getPattern(paper.pattern_key);
@@ -56,7 +70,7 @@ function completePracticeQuestions(paper: MockPaper, questions: MockQuestion[]):
   )) return null;
   if (selected.some((q) => !q.prompt?.trim() || !q.solution?.trim() || (q.qtype === "tita"
     ? !q.answer_text?.trim()
-    : !Array.isArray(q.options) || q.options.length !== 4 || q.correct_index === null || !Number.isInteger(q.correct_index) || q.correct_index < 0 || q.correct_index >= 4))) return null;
+    : !Array.isArray(q.options) || q.options.length !== 4 || q.options.some((option) => typeof option !== "string" || !option.trim()) || q.correct_index === null || !Number.isInteger(q.correct_index) || q.correct_index < 0 || q.correct_index >= 4))) return null;
   return selected.map((q, position) => ({ ...q, position }));
 }
 
@@ -92,7 +106,10 @@ export const listMocks = createServerFn({ method: "GET" })
 
 export const getMockPaper = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { paperId: string }) => input)
+  .inputValidator((input: { paperId: string }) => {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.paperId)) throw new Error("Invalid mock paper ID");
+    return input;
+  })
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: storedPaper, error: paperError } = await supabaseAdmin
@@ -143,15 +160,7 @@ export const getMockPaper = createServerFn({ method: "POST" })
       );
     }
 
-    if (existing && existing.length > 0) {
-      const { error: clearError } = await supabaseAdmin
-        .from("mock_questions")
-        .delete()
-        .eq("paper_id", paper.id);
-      if (clearError) throw new Error(`Could not repair the incomplete paper: ${clearError.message}`);
-    }
     const rows = generated.map((q, i) => ({
-      paper_id: paper.id,
       position: i,
       section: q.section === "VARC" ? "VARC" : q.section === "LR" ? "LR" : "QA",
       qtype: q.qtype === "tita" ? "tita" : "mcq",
@@ -168,9 +177,14 @@ export const getMockPaper = createServerFn({ method: "POST" })
       trick: q.trick ?? null,
       common_mistake: q.common_mistake ?? null,
     }));
-    const { error } = await supabaseAdmin
-      .from("mock_questions")
-      .upsert(rows, { onConflict: "paper_id,position" });
+    const candidates = rows.map((row, i) => ({ ...row, id: `candidate-${i}` })) as unknown as MockQuestion[];
+    const validated = completePracticeQuestions(paper, candidates);
+    if (!validated) throw new Error("The generated paper did not pass its question-count and answer checks. Please retry.");
+
+    const { error } = await supabaseAdmin.rpc("replace_mock_questions", {
+      p_paper_id: paper.id,
+      p_rows: rows as unknown as never,
+    });
     if (error) throw new Error(`Could not save this paper: ${error.message}`);
 
     const { data: inserted, error: reloadError } = await supabaseAdmin
@@ -240,25 +254,42 @@ export const ensureTopicMock = createServerFn({ method: "POST" })
 
 export const submitMock = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { paperId: string; score: number; total: number; seconds: number }) => input)
+  .inputValidator((input: { attemptId: string; paperId: string; responses: MockResponses; seconds: number }) => {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.attemptId)) throw new Error("Invalid attempt ID");
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.paperId)) throw new Error("Invalid mock paper ID");
+    if (!isMockResponses(input.responses)) throw new Error("Invalid mock responses");
+    if (!Number.isInteger(input.seconds) || input.seconds < 0 || input.seconds > 24 * 60 * 60) throw new Error("Invalid test duration");
+    return input;
+  })
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("mock_attempts").insert({
-      user_id: context.userId,
-      paper_id: data.paperId,
-      score: data.score,
-      total: data.total,
-      seconds: data.seconds,
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [{ data: paper, error: paperError }, { data: storedQuestions, error: questionsError }] = await Promise.all([
+      supabaseAdmin.from("mock_papers").select("id, kind, pattern_key, question_count, duration_min").eq("id", data.paperId).maybeSingle(),
+      supabaseAdmin.from("mock_questions").select("id, qtype, correct_index, answer_text, section").eq("paper_id", data.paperId).order("position"),
+    ]);
+    if (paperError) throw new Error(`Could not verify this mock: ${paperError.message}`);
+    if (!paper) throw new Error("Mock not found");
+    if (questionsError) throw new Error(`Could not verify your answers: ${questionsError.message}`);
+    if (data.seconds > paper.duration_min * 60) throw new Error("The submitted duration exceeds this mock's time limit.");
+    const pattern = getPattern(paper.pattern_key);
+    const questionData = (storedQuestions ?? []) as Array<Pick<MockQuestion, "id" | "qtype" | "correct_index" | "answer_text" | "section">>;
+    const expectedCount = paper.kind === "topic"
+      ? paper.question_count
+      : pattern.sections.reduce((sum, section) => sum + section.count, 0);
+    if (questionData.length < expectedCount) throw new Error(`This mock is incomplete (${questionData.length}/${expectedCount}). Reopen it and retry.`);
+    const selectedQuestions = paper.kind === "topic" ? questionData : pattern.sections.flatMap((section) =>
+      questionData.filter((question) => question.section === section.code && question.qtype === section.qtype).slice(0, section.count),
+    );
+    if (selectedQuestions.length !== expectedCount) throw new Error("This mock's sections are incomplete. Reopen it and retry.");
+    const score = countMockCorrect(selectedQuestions, data.responses);
+    const { error: saveError } = await supabaseAdmin.rpc("record_mock_attempt", {
+      p_attempt_id: data.attemptId,
+      p_user_id: context.userId,
+      p_paper_id: data.paperId,
+      p_score: score,
+      p_total: expectedCount,
+      p_seconds: data.seconds,
     });
-    if (error) throw new Error(error.message);
-
-    const { data: profile } = await context.supabase
-      .from("profiles")
-      .select("xp")
-      .eq("id", context.userId)
-      .maybeSingle();
-    await context.supabase
-      .from("profiles")
-      .update({ xp: (profile?.xp ?? 0) + data.score * 12 + 25 })
-      .eq("id", context.userId);
-    return { ok: true };
+    if (saveError) throw new Error(`Could not save your result: ${saveError.message}`);
+    return { ok: true, score, total: expectedCount };
   });

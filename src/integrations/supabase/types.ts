@@ -536,7 +536,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      record_mock_attempt: {
+        Args: {
+          p_attempt_id: string
+          p_paper_id: string
+          p_score: number
+          p_seconds: number
+          p_total: number
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      replace_mock_questions: {
+        Args: { p_paper_id: string; p_rows: Json }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

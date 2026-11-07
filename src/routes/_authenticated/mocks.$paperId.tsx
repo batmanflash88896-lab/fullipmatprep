@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ExamRunner } from "@/components/ExamRunner";
 import { getMockPaper } from "@/lib/mocks.functions";
 import { ArrowLeft, RefreshCw } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/mocks/$paperId")({
   head: () => ({
@@ -26,6 +27,15 @@ export const Route = createFileRoute("/_authenticated/mocks/$paperId")({
 
 function MockPaperPage() {
   const { paperId } = useParams({ from: "/_authenticated/mocks/$paperId" });
+  const { data: authData } = useQuery({
+    queryKey: ["mock-current-user"],
+    queryFn: async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) throw error ?? new Error("Please sign in again to open this mock.");
+      return { id: data.user.id };
+    },
+    staleTime: 60_000,
+  });
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["mock-paper", paperId],
     queryFn: () => getMockPaper({ data: { paperId } }),
@@ -33,8 +43,8 @@ function MockPaperPage() {
     retry: false,
   });
 
-  if (data) {
-    return <ExamRunner paper={data.paper} questions={data.questions} />;
+  if (data && authData) {
+    return <ExamRunner paper={data.paper} questions={data.questions} userId={authData.id} />;
   }
 
   return (
@@ -46,7 +56,7 @@ function MockPaperPage() {
         <ArrowLeft className="h-4 w-4" /> All mocks
       </Link>
 
-      {isLoading && (
+      {(isLoading || !authData) && (
         <div className="rounded-3xl border border-border/70 bg-card p-8 text-center shadow-soft">
           <Mascot size={70} mood="thinking" float className="mx-auto" />
           <p className="mt-3 font-display text-lg font-extrabold">Setting your paper… ✍️</p>
