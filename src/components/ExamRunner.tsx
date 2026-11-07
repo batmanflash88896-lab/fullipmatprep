@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { pretty } from "@/lib/format";
 import { submitMock, type MockPaper, type MockQuestion } from "@/lib/mocks.functions";
 import { getPattern } from "@/lib/exam-patterns";
+import { countMockCorrect, isMockAnswerCorrect } from "@/lib/mock-grading";
 import {
   CheckCircle2,
   Clock,
@@ -31,17 +32,14 @@ function fmt(sec: number) {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
-/** "3/4", "0.75", " 12 " all compare cleanly against the setter's answer. */
-function normalize(v: string) {
-  const t = v.trim().replace(/\s+/g, "").replace(/,/g, "");
-  if (!t) return "";
-  const frac = t.match(/^(-?\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/);
-  const num = frac ? Number(frac[1]) / Number(frac[2]) : Number(t);
-  if (Number.isFinite(num)) return String(Math.round(num * 1e6) / 1e6);
-  return t.toLowerCase();
-}
+type PendingSubmission = {
+  attemptId: string;
+  paperId: string;
+  responses: { answers: Record<string, number>; typed: Record<string, string> };
+  seconds: number;
+};
 
-export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: MockQuestion[] }) {
+export function ExamRunner({ paper, questions, userId }: { paper: MockPaper; questions: MockQuestion[]; userId: string }) {
   const queryClient = useQueryClient();
   const pattern = useMemo(() => getPattern(paper.pattern_key), [paper.pattern_key]);
 
@@ -91,6 +89,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
   const [draftOption, setDraftOption] = useState<number | undefined>();
   const [draftText, setDraftText] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [pendingSubmission, setPendingSubmission] = useState<PendingSubmission | null>(null);
   const examRef = useRef<HTMLDivElement>(null);
 
   async function toggleFullscreen() {
@@ -105,11 +104,26 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
     return () => document.removeEventListener("fullscreenchange", update);
   }, []);
 
-  const storageKey = `ipmat-exam-session:v2:${paper.id}`;
+  const storageKey = `ipmat-exam-session:v3:${userId}:${paper.id}`;
+  const pendingKey = `${storageKey}:pending`;
 
   useEffect(() => {
     try {
       const raw = window.sessionStorage.getItem(storageKey);
+      const pendingRaw = window.sessionStorage.getItem(pendingKey);
+      if (pendingRaw) {
+        const pending = JSON.parse(pendingRaw) as PendingSubmission;
+        if (pending.paperId === paper.id && pending.responses && typeof pending.attemptId === "string") {
+          setPendingSubmission(pending);
+          setAnswers(pending.responses.answers ?? {});
+          setTyped(pending.responses.typed ?? {});
+          setSeconds(pending.seconds);
+          setSubmitted(true);
+          setStarted(true);
+        } else {
+          window.sessionStorage.removeItem(pendingKey);
+        }
+      }
       if (raw) {
         const savedState = JSON.parse(raw) as {
           started?: boolean;
@@ -142,7 +156,7 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
     } finally {
       setHydrated(true);
     }
-  }, [storageKey]);
+  }, [storageKey, pendingKey, paper.id]);
 
   const group = groups[sectionIdx] ?? groups[0];
   const list = group?.questions ?? [];
@@ -186,21 +200,16 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
   }
 
   function isCorrect(q: MockQuestion) {
-    if (q.qtype === "tita") {
-      const t = typed[q.id];
-      if (!t || !q.answer_text) return false;
-      return normalize(t) === normalize(q.answer_text);
-    }
-    return answers[q.id] === q.correct_index;
+    return isMockAnswerCorrect(q, { answers, typed });
   }
 
-  const score = questions.filter((q) => isCorrect(q)).length;
+  const score = countMockCorrect(questions, { answers, typed });
   const wrongMcq = questions.filter((q) => q.qtype !== "tita" && attempted(q) && !isCorrect(q)).length;
   const wrongTita = questions.filter((q) => q.qtype === "tita" && attempted(q) && !isCorrect(q)).length;
   const marks = score * pattern.correct - wrongMcq * pattern.negative - wrongTita * pattern.negativeTita;
   const maxMarks = questions.length * pattern.correct;
   const elapsedSeconds = deadline
-    ? Math.min(paper.duration_min * 60, Math.max(0, Math.floor((Math.max(now, Date.now()) - (deadline - paper.duration_min * 60 * 1000)) / 1000)))
+    ? Math.min(paper.duration_min * 60, Math.max(0, Math.floor((Math.max(now, deadline && submitted ? now : Date.now()) - (deadline - paper.duration_min * 60 * 1000)) / 1000)))
     : seconds;
   const left = deadline
     ? Math.max(0, Math.ceil((deadline - Math.max(now, Date.now())) / 1000))
@@ -237,20 +246,45 @@ export function ExamRunner({ paper, questions }: { paper: MockPaper; questions: 
     go(index + 1);
   }
 
-  function finish() {
+  async function finish() {
+    if (pendingSubmission) {
+      await saveSubmission(pendingSubmission);
+      return;
+    }
     setConfirming(false);
     setSubmitted(true);
-    window.sessionStorage.removeItem(storageKey);
+    const payload: PendingSubmission = {
+      attemptId: crypto.randomUUID(),
+      paperId: paper.id,
+      responses: { answers: { ...answers }, typed: { ...typed } },
+      seconds: elapsedSeconds,
+    };
+    window.sessionStorage.setItem(pendingKey, JSON.stringify(payload));
+    setPendingSubmission(payload);
+  }
+
+  async function saveSubmission(payload: PendingSubmission) {
     if (saved.current) return;
     saved.current = true;
-    submitMock({ data: { paperId: paper.id, score, total: questions.length, seconds: elapsedSeconds } }).then(() => {
+    try {
+      await submitMock({ data: payload });
+      window.sessionStorage.removeItem(storageKey);
+      window.sessionStorage.removeItem(pendingKey);
       queryClient.invalidateQueries({ queryKey: ["mocks"] });
       queryClient.invalidateQueries({ queryKey: ["profile-chip"] });
-    }).catch(() => {
+      setPendingSubmission(null);
+      setSaveError(null);
+    } catch {
       saved.current = false;
       setSaveError("Your result could not be saved. Retry saving without losing your result.");
-    });
+    }
   }
+
+  useEffect(() => {
+    if (pendingSubmission) void saveSubmission(pendingSubmission);
+    // A pending attempt is intentionally retried after reload until acknowledged.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingSubmission]);
 
   useEffect(() => {
     if (started && !submitted && deadline && left === 0) finish();
