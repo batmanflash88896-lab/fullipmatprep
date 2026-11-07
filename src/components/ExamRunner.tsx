@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { Mascot } from "@/components/Mascot";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ type PendingSubmission = {
 
 export function ExamRunner({ paper, questions, userId }: { paper: MockPaper; questions: MockQuestion[]; userId: string }) {
   const queryClient = useQueryClient();
+  const submitAttempt = useServerFn(submitMock);
   const pattern = useMemo(() => getPattern(paper.pattern_key), [paper.pattern_key]);
 
   /** Ordered exam sections (e.g. QA-MCQ → QA Short Answer → VARC) with their questions. */
@@ -113,7 +115,7 @@ export function ExamRunner({ paper, questions, userId }: { paper: MockPaper; que
       const pendingRaw = window.sessionStorage.getItem(pendingKey);
       if (pendingRaw) {
         const pending = JSON.parse(pendingRaw) as PendingSubmission;
-        if (pending.paperId === paper.id && pending.responses && typeof pending.attemptId === "string") {
+        if (pending.paperId === paper.id && pending.responses && typeof pending.attemptId === "string" && typeof pending.seconds === "number") {
           setPendingSubmission(pending);
           setAnswers(pending.responses.answers ?? {});
           setTyped(pending.responses.typed ?? {});
@@ -124,7 +126,7 @@ export function ExamRunner({ paper, questions, userId }: { paper: MockPaper; que
           window.sessionStorage.removeItem(pendingKey);
         }
       }
-      if (raw) {
+      if (raw && !pendingRaw) {
         const savedState = JSON.parse(raw) as {
           started?: boolean;
           sectionIdx?: number;
@@ -137,12 +139,14 @@ export function ExamRunner({ paper, questions, userId }: { paper: MockPaper; que
           deadline?: number;
         };
         if (savedState.started) setStarted(true);
-        if (typeof savedState.sectionIdx === "number") setSectionIdx(Math.max(0, savedState.sectionIdx));
-        if (typeof savedState.index === "number") setIndex(Math.max(0, savedState.index));
-        if (savedState.answers) setAnswers(savedState.answers);
-        if (savedState.typed) setTyped(savedState.typed);
-        if (savedState.marked) setMarked(savedState.marked);
-        if (savedState.visited) setVisited(savedState.visited);
+        if (typeof savedState.sectionIdx === "number") setSectionIdx(Math.max(0, Math.min(groups.length - 1, savedState.sectionIdx)));
+        const safeAnswers = Object.fromEntries(Object.entries(savedState.answers ?? {}).filter(([id, answer]) => questions.some((question) => question.id === id && question.qtype === "mcq") && Number.isInteger(answer) && answer >= 0 && answer < 4));
+        const safeTyped = Object.fromEntries(Object.entries(savedState.typed ?? {}).filter(([id, answer]) => questions.some((question) => question.id === id && question.qtype === "tita") && typeof answer === "string"));
+        if (safeAnswers) setAnswers(safeAnswers);
+        if (safeTyped) setTyped(safeTyped);
+        if (savedState.marked) setMarked(Object.fromEntries(Object.entries(savedState.marked).filter(([id]) => questions.some((question) => question.id === id))));
+        if (savedState.visited) setVisited(Object.fromEntries(Object.entries(savedState.visited).filter(([id]) => questions.some((question) => question.id === id))));
+        if (typeof savedState.index === "number") setIndex(Math.max(0, Math.min((groups[Math.max(0, Math.min(groups.length - 1, savedState.sectionIdx ?? 0))]?.questions.length ?? 1) - 1, savedState.index)));
         const restoredSeconds = typeof savedState.seconds === "number" ? Math.max(0, savedState.seconds) : 0;
         setSeconds(restoredSeconds);
         if (typeof savedState.deadline === "number") {
@@ -156,7 +160,7 @@ export function ExamRunner({ paper, questions, userId }: { paper: MockPaper; que
     } finally {
       setHydrated(true);
     }
-  }, [storageKey, pendingKey, paper.id]);
+  }, [storageKey, pendingKey, paper.id, groups, questions]);
 
   const group = groups[sectionIdx] ?? groups[0];
   const list = group?.questions ?? [];
@@ -256,7 +260,10 @@ export function ExamRunner({ paper, questions, userId }: { paper: MockPaper; que
     const payload: PendingSubmission = {
       attemptId: crypto.randomUUID(),
       paperId: paper.id,
-      responses: { answers: { ...answers }, typed: { ...typed } },
+      responses: {
+        answers: { ...answers, ...(current?.qtype === "mcq" && draftOption !== undefined ? { [current.id]: draftOption } : {}) },
+        typed: { ...typed, ...(current?.qtype === "tita" && draftText.trim() ? { [current.id]: draftText.trim() } : {}) },
+      },
       seconds: elapsedSeconds,
     };
     window.sessionStorage.setItem(pendingKey, JSON.stringify(payload));
@@ -267,7 +274,7 @@ export function ExamRunner({ paper, questions, userId }: { paper: MockPaper; que
     if (saved.current) return;
     saved.current = true;
     try {
-      await submitMock({ data: payload });
+      await submitAttempt({ data: payload });
       window.sessionStorage.removeItem(storageKey);
       window.sessionStorage.removeItem(pendingKey);
       queryClient.invalidateQueries({ queryKey: ["mocks"] });

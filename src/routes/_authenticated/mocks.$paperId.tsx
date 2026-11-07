@@ -56,7 +56,7 @@ function MockPaperPage() {
         <ArrowLeft className="h-4 w-4" /> All mocks
       </Link>
 
-      {isLoading && (
+      {(isLoading || !authData) && (
         <div className="rounded-3xl border border-border/70 bg-card p-8 text-center shadow-soft">
           <Mascot size={70} mood="thinking" float className="mx-auto" />
           <p className="mt-3 font-display text-lg font-extrabold">Setting your paper… ✍️</p>

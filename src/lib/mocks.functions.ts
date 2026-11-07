@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { findTopic } from "@/lib/syllabus";
 import { getPattern } from "@/lib/exam-patterns";
+import { countMockCorrect } from "@/lib/mock-grading";
 
 export type MockPaper = {
   id: string;
