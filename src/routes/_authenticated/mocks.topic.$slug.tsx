@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Mascot } from "@/components/Mascot";
+import { Button } from "@/components/ui/button";
 import { ensureTopicMock } from "@/lib/mocks.functions";
 
 export const Route = createFileRoute("/_authenticated/mocks/topic/$slug")({
@@ -24,14 +25,18 @@ export const Route = createFileRoute("/_authenticated/mocks/topic/$slug")({
 function TopicMockRedirect() {
   const { slug } = useParams({ from: "/_authenticated/mocks/topic/$slug" });
   const navigate = useNavigate();
-  const started = useRef(false);
+  const requestRef = useRef<{ slug: string; promise: ReturnType<typeof ensureTopicMock> } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
     let alive = true;
-    ensureTopicMock({ data: { slug } })
+    const promise = requestRef.current?.slug === slug
+      ? requestRef.current.promise
+      : ensureTopicMock({ data: { slug } });
+    requestRef.current = { slug, promise };
+
+    promise
       .then((res) => {
         if (alive) navigate({ to: "/mocks/$paperId", params: { paperId: res.paperId }, replace: true });
       })
@@ -41,7 +46,7 @@ function TopicMockRedirect() {
     return () => {
       alive = false;
     };
-  }, [slug, navigate]);
+  }, [slug, navigate, attempt]);
 
   return (
     <AppShell>
@@ -51,6 +56,11 @@ function TopicMockRedirect() {
           {error ? "Topic test needs another try" : "Preparing your topic mock… 🎯"}
         </p>
         {error && <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{error}</p>}
+        {error && <Button className="mt-4" onClick={() => {
+          requestRef.current = null;
+          setError(null);
+          setAttempt((current) => current + 1);
+        }}>Retry topic test</Button>}
       </div>
     </AppShell>
   );
